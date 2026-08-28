@@ -44,37 +44,39 @@ class L2Collector:
         self._stop.set()
 
     async def bootstrap(self) -> OrderBook:
-        """Rebuild the local book without losing events received during REST snapshots.
-
-        Binance may return a snapshot whose ``lastUpdateId`` is ahead of all
-        buffered events. Those events are legitimately stale relative to the
-        snapshot, so bootstrap retries the REST snapshot instead of treating
-        the condition as a collector crash. Events received after the buffer
-        swap remain in the live buffer and are applied by the consumer after
-        the new book is installed.
-        """
+        """Build a synchronized book without discarding events needed by retry."""
         self._bootstrapping = True
         try:
-            for attempt in range(1, 6):
+            for attempt in range(1, 11):
                 last_id, bids, asks = await self.market_data.snapshot()
-                buffered = self.buffer.swap()
+                buffered = self.buffer.snapshot()
                 try:
                     result = self.syncer.sync_snapshot(last_id, bids, asks, buffered)
                 except RuntimeError as exc:
                     log.warning(
-                        "snapshot synchronization unavailable (attempt %d/5): %s; retrying snapshot",
+                        "snapshot synchronization unavailable (attempt %d/10): %s; waiting for stream alignment",
                         attempt,
                         exc,
                     )
-                    if attempt == 5:
+                    if attempt == 10:
                         raise
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(0.2)
                     continue
 
+                # Detach only after the buffered observation window has been
+                # validated. New websocket events arriving after this point
+                # remain in the live buffer and are not lost.
+                self.buffer.swap()
                 self.book = result.book
                 self.events_applied += result.applied_events
                 self.resyncs += 1
                 self.contaminated = False
+                log.info(
+                    "snapshot synchronized: last_update_id=%d applied_events=%d skipped_events=%d",
+                    self.book.last_update_id,
+                    result.applied_events,
+                    result.skipped_events,
+                )
                 return self.book
 
             raise RuntimeError("snapshot bootstrap exhausted retries")
