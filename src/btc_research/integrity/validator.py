@@ -11,18 +11,19 @@ class IntegrityStatus(str, Enum):
     DUPLICATE = "DUPLICATE"
     GAP = "GAP"
     PREVIOUS_ID_MISMATCH = "PREVIOUS_ID_MISMATCH"
+    UNINITIALIZED = "UNINITIALIZED"
 
 
 @dataclass(frozen=True)
 class IntegrityResult:
     status: IntegrityStatus
-    expected_next_id: int
+    expected_next_id: int | None
     first_update_id: int
     final_update_id: int
 
 
 class SequenceValidator:
-    """Validate USDⓈ-M Futures diff-depth continuity.
+    """Validate USDⓈ-M Futures diff-depth continuity after a REST snapshot.
 
     The first stream event after a REST snapshot must satisfy:
         U <= snapshot_last_update_id + 1 <= u
@@ -30,8 +31,9 @@ class SequenceValidator:
     Every later event must satisfy:
         pu == previous accepted event's u
 
-    Duplicate/old events are ignored. Any sequence break invalidates the
-    stream and requires snapshot resynchronization by the caller.
+    Duplicate/old events are ignored. Any sequence break requires snapshot
+    resynchronization by the caller. A validator without a snapshot ID cannot
+    declare an event valid.
     """
 
     def __init__(self, last_update_id: int | None = None) -> None:
@@ -41,8 +43,8 @@ class SequenceValidator:
     def validate(self, update: DepthUpdate) -> IntegrityResult:
         if self.last_update_id is None:
             return IntegrityResult(
-                IntegrityStatus.VALID,
-                update.first_update_id,
+                IntegrityStatus.UNINITIALIZED,
+                None,
                 update.first_update_id,
                 update.final_update_id,
             )
