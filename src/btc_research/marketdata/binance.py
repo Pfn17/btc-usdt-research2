@@ -44,4 +44,5 @@ class BinanceFuturesMarketData:
             bids=[PriceLevel(str(p), str(q)) for p, q in payload.get('b', [])],
             asks=[PriceLevel(str(p), str(q)) for p, q in payload.get('a', [])],
             raw_event=raw,
+            previous_update_id=int(payload['pu']) if payload.get('pu') is not None else None,
         )
