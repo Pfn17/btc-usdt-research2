@@ -28,7 +28,9 @@ def make_update(u: int, bids=None, asks=None, t: int = 1_000) -> DepthUpdate:
 def test_feature_engine_core_features() -> None:
     book = make_book()
     engine = FeatureEngine(depth_levels=2)
-    snap = engine.compute(book, make_update(101))
+    update = make_update(101)
+    book.apply(update)
+    snap = engine.compute(book, update)
     assert snap.mid_price == 100.5
     assert snap.spread == 1.0
     assert snap.spread_bps == pytest.approx(99.5024876)
@@ -42,8 +44,10 @@ def test_feature_engine_core_features() -> None:
 def test_order_flow_uses_book_as_initial_baseline() -> None:
     book = make_book()
     engine = FeatureEngine()
-    engine.compute(book, make_update(101))
-    update = make_update(102, bids=[PriceLevel("100", "3")], asks=[] , t=1_001)
+    first = make_update(101)
+    book.apply(first)
+    engine.compute(book, first)
+    update = make_update(102, bids=[PriceLevel("100", "3")], asks=[], t=1_001)
     book.apply(update)
     snap = engine.compute(book, update)
     assert snap.order_flow_1s == pytest.approx(1.0)
