@@ -44,53 +44,17 @@ class L2Collector:
         self._stop.set()
 
     async def bootstrap(self) -> OrderBook:
-        """Rebuild the book without losing events received during REST snapshot.
-
-        While the snapshot request is in flight, the consumer only buffers
-        events. Once the snapshot returns, ``swap`` atomically detaches the
-        complete observation-ordered buffer. The synchronizer consumes that
-        detached batch, while any events arriving after the swap remain in the
-        fresh live buffer and are applied normally after bootstrap completes.
-        """
+        """Rebuild without losing events received while REST is in flight."""
         self._bootstrapping = True
         try:
             last_id, bids, asks = await self.market_data.snapshot()
             buffered = self.buffer.swap()
-            # Reuse the synchronizer's reconstruction semantics without making
-            # a second network snapshot call.
-            from btc_research.orderbook.book import OrderBook
-
-            book = OrderBook.from_snapshot(last_id, bids, asks)
-            start = None
-            for index, event in enumerate(buffered):
-                if event.final_update_id <= last_id:
-                    continue
-                if event.first_update_id <= last_id + 1 <= event.final_update_id:
-                    start = index
-                    break
-                if event.first_update_id > last_id + 1:
-                    raise RuntimeError(
-                        f"snapshot cannot be synchronized: expected event spanning {last_id + 1}, "
-                        f"got {event.first_update_id}-{event.final_update_id}"
-                    )
-            if start is None:
-                raise RuntimeError("snapshot cannot be synchronized from buffered events")
-            applied = 0
-            for event in buffered[start:]:
-                if event.first_update_id > book.last_update_id + 1:
-                    raise RuntimeError(
-                        f"depth gap during sync: expected {book.last_update_id + 1}, "
-                        f"got {event.first_update_id}-{event.final_update_id}"
-                    )
-                before = book.last_update_id
-                book.apply(event)
-                if book.last_update_id != before:
-                    applied += 1
-            self.book = book
-            self.events_applied += applied
+            result = self.syncer.sync_snapshot(last_id, bids, asks, buffered)
+            self.book = result.book
+            self.events_applied += result.applied_events
             self.resyncs += 1
             self.contaminated = False
-            return book
+            return self.book
         finally:
             self._bootstrapping = False
 
