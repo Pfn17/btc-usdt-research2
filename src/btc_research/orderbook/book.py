@@ -8,7 +8,7 @@ from btc_research.marketdata.types import DepthUpdate, PriceLevel
 
 @dataclass
 class OrderBook:
-    """In-memory Binance depth book rebuilt from a REST snapshot plus updates."""
+    """In-memory Binance Futures depth book rebuilt from REST plus diff updates."""
 
     bids: dict[Decimal, Decimal] = field(default_factory=dict)
     asks: dict[Decimal, Decimal] = field(default_factory=dict)
@@ -43,16 +43,28 @@ class OrderBook:
                 target[price] = quantity
 
     def apply(self, update: DepthUpdate) -> None:
-        """Apply an update only when it is contiguous with the current book."""
+        """Apply a Binance Futures diff update with its ``pu`` chain intact."""
         if self.last_update_id is None:
             raise ValueError("book is not initialized")
-        if update.final_update_id <= self.last_update_id:
+
+        if update.final_update_id < self.last_update_id:
             return
-        if update.first_update_id > self.last_update_id + 1:
+
+        # Futures bootstrap permits the first event to overlap the snapshot
+        # (U <= lastUpdateId <= u) or explicitly chain from it (pu == lastUpdateId).
+        # After bootstrap, every event must continue the pu -> previous-u chain.
+        if update.previous_update_id is not None:
+            if update.previous_update_id != self.last_update_id:
+                raise ValueError(
+                    f"sequence chain gap: expected pu={self.last_update_id}, "
+                    f"got pu={update.previous_update_id} for {update.first_update_id}-{update.final_update_id}"
+                )
+        elif update.first_update_id > self.last_update_id + 1:
             raise ValueError(
                 f"sequence gap: expected <= {self.last_update_id + 1}, "
                 f"got {update.first_update_id}-{update.final_update_id}"
             )
+
         self._apply_side(self.bids, update.bids)
         self._apply_side(self.asks, update.asks)
         self.last_update_id = update.final_update_id
