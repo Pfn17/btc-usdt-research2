@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from btc_research.marketdata.binance import BinanceFuturesMarketData
-from btc_research.marketdata.types import DepthUpdate
+from btc_research.marketdata.types import DepthUpdate, PriceLevel
 from btc_research.orderbook.book import OrderBook
 
 
@@ -15,22 +15,24 @@ class SyncResult:
 
 
 class OrderBookSynchronizer:
-    """Build a valid local book from buffered WebSocket events + REST snapshot.
+    """Build a valid local book from a REST snapshot and buffered events.
 
     The buffer is treated as an observation-ordered FIFO. Events are never
     sorted by update ID because doing so would hide out-of-order delivery.
-    Events before the first event spanning ``lastUpdateId + 1`` are skipped;
-    every subsequent event must continue the sequence without a gap.
     """
 
     def __init__(self, market_data: BinanceFuturesMarketData) -> None:
         self.market_data = market_data
         self.resync_count = 0
 
-    async def sync(self, buffered: list[DepthUpdate]) -> SyncResult:
-        last_id, bids, asks = await self.market_data.snapshot()
+    def sync_snapshot(
+        self,
+        last_id: int,
+        bids: list[PriceLevel],
+        asks: list[PriceLevel],
+        buffered: list[DepthUpdate],
+    ) -> SyncResult:
         book = OrderBook.from_snapshot(last_id, bids, asks)
-
         start = None
         for index, event in enumerate(buffered):
             if event.final_update_id <= last_id:
@@ -39,8 +41,6 @@ class OrderBookSynchronizer:
                 start = index
                 break
             if event.first_update_id > last_id + 1:
-                # The required bridge event has already been missed in the
-                # observation stream; do not sort later events into existence.
                 raise RuntimeError(
                     f"snapshot cannot be synchronized: expected event spanning {last_id + 1}, "
                     f"got {event.first_update_id}-{event.final_update_id}"
@@ -61,5 +61,8 @@ class OrderBookSynchronizer:
             book.apply(event)
             if book.last_update_id != before:
                 applied += 1
-
         return SyncResult(book, applied, skipped)
+
+    async def sync(self, buffered: list[DepthUpdate]) -> SyncResult:
+        last_id, bids, asks = await self.market_data.snapshot()
+        return self.sync_snapshot(last_id, bids, asks, buffered)
