@@ -6,9 +6,12 @@ from btc_research.marketdata.binance import BinanceFuturesMarketData
 from btc_research.l2 import EventBuffer, OrderBookSynchronizer
 
 
-def event(u: int, U: int | None = None) -> DepthUpdate:
+def event(u: int, U: int | None = None, pu: int | None = None) -> DepthUpdate:
     first = u if U is None else U
-    return DepthUpdate("BTCUSDT", 1_000, 1, first, u, [PriceLevel("100", "1")], [PriceLevel("101", "2")], b"{}")
+    return DepthUpdate(
+        "BTCUSDT", 1_000, 1, first, u,
+        [PriceLevel("100", "1")], [PriceLevel("101", "2")], b"{}", pu
+    )
 
 
 def test_buffer_is_bounded_and_counts_drops() -> None:
@@ -21,15 +24,17 @@ def test_buffer_is_bounded_and_counts_drops() -> None:
     assert [x.final_update_id for x in buf.snapshot()] == [2, 3]
 
 
-def test_sync_starts_with_event_spanning_snapshot_plus_one() -> None:
+def test_sync_accepts_futures_snapshot_overlap_and_pu_chain() -> None:
     class Adapter:
         async def snapshot(self):
             return 10, [PriceLevel("100", "1")], [PriceLevel("101", "2")]
 
     async def run():
-        result = await OrderBookSynchronizer(Adapter()).sync([event(10), event(12, 11), event(13)])
+        result = await OrderBookSynchronizer(Adapter()).sync(
+            [event(10, 10, 9), event(12, 11, 10), event(13, 13, 12)]
+        )
         assert result.book.last_update_id == 13
-        assert result.applied_events == 2
+        assert result.applied_events == 3
         assert result.book.bids
 
     import asyncio
@@ -38,8 +43,8 @@ def test_sync_starts_with_event_spanning_snapshot_plus_one() -> None:
 
 def test_orderbook_rejects_sequence_gap() -> None:
     book = OrderBook.from_snapshot(10, [PriceLevel("100", "1")], [PriceLevel("101", "2")])
-    with pytest.raises(ValueError, match="sequence gap"):
-        book.apply(event(12, 12))
+    with pytest.raises(ValueError, match="sequence"):
+        book.apply(event(12, 12, 11))
 
 
 def test_binance_stream_url() -> None:
@@ -47,3 +52,13 @@ def test_binance_stream_url() -> None:
     from btc_research.l2 import L2Collector
     collector = L2Collector(adapter, "wss://fstream.binance.com/ws", "BTCUSDT")
     assert collector.stream_url == "wss://fstream.binance.com/ws/btcusdt@depth@100ms"
+
+
+def test_binance_decoder_preserves_futures_pu() -> None:
+    adapter = BinanceFuturesMarketData("https://fapi.binance.com")
+    update = adapter.decode_depth_message(
+        b'{"e":"depthUpdate","E":1,"s":"BTCUSDT","U":101,"u":102,"pu":100,"b":[],"a":[]}'
+    )
+    assert update.first_update_id == 101
+    assert update.final_update_id == 102
+    assert update.previous_update_id == 100
