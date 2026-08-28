@@ -15,10 +15,12 @@ class SyncResult:
 
 
 class OrderBookSynchronizer:
-    """Build a valid local book from a REST snapshot and buffered events.
+    """Build a valid local Binance Futures book from REST + buffered diffs.
 
-    The buffer is treated as an observation-ordered FIFO. Events are never
-    sorted by update ID because doing so would hide out-of-order delivery.
+    Futures differs from Spot: the first buffered event may overlap the
+    snapshot at ``U <= lastUpdateId <= u`` or chain directly with ``pu ==
+    lastUpdateId``. Subsequent events must preserve the ``pu == previous u``
+    chain. Events remain in observation order and are never sorted by ID.
     """
 
     def __init__(self, market_data: BinanceFuturesMarketData) -> None:
@@ -33,17 +35,27 @@ class OrderBookSynchronizer:
         buffered: list[DepthUpdate],
     ) -> SyncResult:
         book = OrderBook.from_snapshot(last_id, bids, asks)
-        start = None
+        start: int | None = None
+
         for index, event in enumerate(buffered):
-            if event.final_update_id <= last_id:
+            # Binance Futures: drop events whose final update is strictly
+            # before the snapshot ID. An event ending exactly at last_id may
+            # be the bridge via pu == last_id and must not be discarded.
+            if event.final_update_id < last_id:
                 continue
-            if event.first_update_id <= last_id + 1 <= event.final_update_id:
+
+            overlaps_snapshot = (
+                event.first_update_id <= last_id <= event.final_update_id
+            )
+            chains_snapshot = event.previous_update_id == last_id
+            if overlaps_snapshot or chains_snapshot:
                 start = index
                 break
-            if event.first_update_id > last_id + 1:
+
+            if event.first_update_id > last_id and event.previous_update_id != last_id:
                 raise RuntimeError(
-                    f"snapshot cannot be synchronized: expected event spanning {last_id + 1}, "
-                    f"got {event.first_update_id}-{event.final_update_id}"
+                    f"snapshot cannot be synchronized: expected overlap/pu with {last_id}, "
+                    f"got {event.first_update_id}-{event.final_update_id} pu={event.previous_update_id}"
                 )
 
         if start is None:
@@ -51,16 +63,17 @@ class OrderBookSynchronizer:
 
         applied = 0
         skipped = start
-        for event in buffered[start:]:
-            if event.first_update_id > book.last_update_id + 1:
-                raise RuntimeError(
-                    f"depth gap during sync: expected {book.last_update_id + 1}, "
-                    f"got {event.first_update_id}-{event.final_update_id}"
-                )
+        for index, event in enumerate(buffered[start:], start=start):
             before = book.last_update_id
-            book.apply(event)
+            try:
+                book.apply(event)
+            except ValueError as exc:
+                raise RuntimeError(
+                    f"depth sequence invalid at buffered event {index}: {exc}"
+                ) from exc
             if book.last_update_id != before:
                 applied += 1
+
         return SyncResult(book, applied, skipped)
 
     async def sync(self, buffered: list[DepthUpdate]) -> SyncResult:
