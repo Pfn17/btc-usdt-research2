@@ -85,6 +85,7 @@ class BinanceFuturesMarketData:
                     await asyncio.sleep(min(8.0, 0.5 * (2**attempt)))
                     continue
 
+                self.rate_limiter.record_response(response.headers)
                 if response.status_code in (429, 418) or response.status_code >= 500:
                     retry_after = self._retry_after(response)
                     self.rate_limiter.record_retry(response.status_code, retry_after)
