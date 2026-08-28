@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass
+from collections.abc import Mapping
 
 
 @dataclass(frozen=True, slots=True)
@@ -13,15 +14,11 @@ class RateLimitMetrics:
     responses_429: int
     responses_418: int
     last_retry_after_s: float | None
+    last_used_weight_1m: int | None
 
 
 class RestRateLimiter:
-    """Small async pacing guard for public REST calls.
-
-    It deliberately limits client-side request frequency without assuming a
-    particular Binance weight schedule. Endpoint-specific weight accounting
-    can be added later when the collector uses multiple weighted endpoints.
-    """
+    """Async pacing and observability guard for public REST calls."""
 
     def __init__(self, min_interval_s: float = 0.25) -> None:
         if min_interval_s < 0:
@@ -35,6 +32,7 @@ class RestRateLimiter:
         self._responses_429 = 0
         self._responses_418 = 0
         self._last_retry_after: float | None = None
+        self._last_used_weight_1m: int | None = None
 
     async def acquire(self) -> None:
         async with self._lock:
@@ -46,6 +44,16 @@ class RestRateLimiter:
                 now = time.monotonic()
             self._next_allowed = now + self.min_interval_s
             self._requests += 1
+
+    def record_response(self, headers: Mapping[str, str]) -> None:
+        """Record Binance's current IP request-weight header when present."""
+        for name, value in headers.items():
+            if name.lower() == "x-mbx-used-weight-1m":
+                try:
+                    self._last_used_weight_1m = int(value)
+                except (TypeError, ValueError):
+                    pass
+                break
 
     def record_retry(self, status_code: int, retry_after_s: float | None) -> None:
         self._retries += 1
@@ -64,4 +72,5 @@ class RestRateLimiter:
             responses_429=self._responses_429,
             responses_418=self._responses_418,
             last_retry_after_s=self._last_retry_after,
+            last_used_weight_1m=self._last_used_weight_1m,
         )
