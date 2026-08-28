@@ -26,6 +26,11 @@ def update(
     )
 
 
+def test_validator_requires_snapshot_initialization():
+    result = SequenceValidator().validate(update(101, 102, previous=100))
+    assert result.status is IntegrityStatus.UNINITIALIZED
+
+
 def test_validator_accepts_first_event_overlapping_snapshot():
     validator = SequenceValidator(100)
     result = validator.accept(update(99, 101, previous=98))
