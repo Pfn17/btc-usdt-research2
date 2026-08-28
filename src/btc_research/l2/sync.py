@@ -15,13 +15,7 @@ class SyncResult:
 
 
 class OrderBookSynchronizer:
-    """Build a valid local Binance Futures book from REST + buffered diffs.
-
-    Futures differs from Spot: the first buffered event may overlap the
-    snapshot at ``U <= lastUpdateId <= u`` or chain directly with ``pu ==
-    lastUpdateId``. Subsequent events must preserve the ``pu == previous u``
-    chain. Events remain in observation order and are never sorted by ID.
-    """
+    """Build a valid Binance Futures local book from REST + FIFO diffs."""
 
     def __init__(self, market_data: BinanceFuturesMarketData) -> None:
         self.market_data = market_data
@@ -35,26 +29,35 @@ class OrderBookSynchronizer:
         buffered: list[DepthUpdate],
     ) -> SyncResult:
         book = OrderBook.from_snapshot(last_id, bids, asks)
+        target = last_id + 1
         start: int | None = None
 
         for index, event in enumerate(buffered):
-            if event.final_update_id < last_id:
+            # Events fully before the snapshot cannot affect the rebuilt book.
+            if event.final_update_id < target:
                 continue
 
-            overlaps_snapshot = event.first_update_id <= last_id <= event.final_update_id
-            chains_snapshot = event.previous_update_id == last_id
-            if overlaps_snapshot or chains_snapshot:
+            # Binance Futures bootstrap bridge: U <= lastUpdateId+1 <= u.
+            # Keep observation order; never sort the stream by update ID.
+            if event.first_update_id <= target <= event.final_update_id:
                 start = index
                 break
 
-            if event.first_update_id > last_id and event.previous_update_id != last_id:
+            # The first relevant event starts after the required bridge. The
+            # current snapshot is too old relative to the observed stream;
+            # caller must obtain a newer snapshot while retaining the buffer.
+            if event.first_update_id > target:
                 raise RuntimeError(
-                    f"snapshot cannot be synchronized: expected overlap/pu with {last_id}, "
-                    f"got {event.first_update_id}-{event.final_update_id} pu={event.previous_update_id}"
+                    f"snapshot behind buffered stream: target={target}, "
+                    f"got {event.first_update_id}-{event.final_update_id} "
+                    f"pu={event.previous_update_id}"
                 )
 
         if start is None:
-            raise RuntimeError("snapshot cannot be synchronized from buffered events")
+            raise RuntimeError(
+                f"snapshot bridge not yet buffered: target={target}, "
+                f"buffered_events={len(buffered)}"
+            )
 
         applied = 0
         skipped = start
