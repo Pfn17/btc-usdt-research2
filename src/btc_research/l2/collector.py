@@ -33,6 +33,7 @@ class L2Collector:
         self.events_received = 0
         self.events_applied = 0
         self.sequence_errors = 0
+        self._bootstrapping = False
         self._stop = asyncio.Event()
 
     @property
@@ -43,13 +44,55 @@ class L2Collector:
         self._stop.set()
 
     async def bootstrap(self) -> OrderBook:
-        result = await self.syncer.sync(self.buffer.snapshot())
-        self.book = result.book
-        self.events_applied += result.applied_events
-        self.resyncs += 1
-        self.contaminated = False
-        self.buffer.clear()
-        return self.book
+        """Rebuild the book without losing events received during REST snapshot.
+
+        While the snapshot request is in flight, the consumer only buffers
+        events. Once the snapshot returns, ``swap`` atomically detaches the
+        complete observation-ordered buffer. The synchronizer consumes that
+        detached batch, while any events arriving after the swap remain in the
+        fresh live buffer and are applied normally after bootstrap completes.
+        """
+        self._bootstrapping = True
+        try:
+            last_id, bids, asks = await self.market_data.snapshot()
+            buffered = self.buffer.swap()
+            # Reuse the synchronizer's reconstruction semantics without making
+            # a second network snapshot call.
+            from btc_research.orderbook.book import OrderBook
+
+            book = OrderBook.from_snapshot(last_id, bids, asks)
+            start = None
+            for index, event in enumerate(buffered):
+                if event.final_update_id <= last_id:
+                    continue
+                if event.first_update_id <= last_id + 1 <= event.final_update_id:
+                    start = index
+                    break
+                if event.first_update_id > last_id + 1:
+                    raise RuntimeError(
+                        f"snapshot cannot be synchronized: expected event spanning {last_id + 1}, "
+                        f"got {event.first_update_id}-{event.final_update_id}"
+                    )
+            if start is None:
+                raise RuntimeError("snapshot cannot be synchronized from buffered events")
+            applied = 0
+            for event in buffered[start:]:
+                if event.first_update_id > book.last_update_id + 1:
+                    raise RuntimeError(
+                        f"depth gap during sync: expected {book.last_update_id + 1}, "
+                        f"got {event.first_update_id}-{event.final_update_id}"
+                    )
+                before = book.last_update_id
+                book.apply(event)
+                if book.last_update_id != before:
+                    applied += 1
+            self.book = book
+            self.events_applied += applied
+            self.resyncs += 1
+            self.contaminated = False
+            return book
+        finally:
+            self._bootstrapping = False
 
     async def _consume(self, ws: ClientConnection, on_update: Callable[[DepthUpdate], None] | None) -> None:
         async for message in ws:
@@ -60,7 +103,8 @@ class L2Collector:
             self.buffer.append(event)
             if on_update:
                 on_update(event)
-            if self.book is None:
+
+            if self.book is None or self._bootstrapping:
                 continue
             try:
                 before = self.book.last_update_id
