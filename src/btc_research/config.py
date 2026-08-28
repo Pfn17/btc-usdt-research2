@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', env_prefix='BTC_', extra='ignore')
 
     symbol: str = 'BTCUSDT'
-    websocket_url: str = 'wss://fstream.binance.com/ws'
+    websocket_url: str = 'wss://fstream.binance.com/public/ws'
     futures_api_url: str = 'https://fapi.binance.com'
     depth_levels: int = Field(default=1000, ge=5)
     archive_dir: str = './data/raw'
