@@ -15,11 +15,12 @@ class SyncResult:
 
 
 class OrderBookSynchronizer:
-    """Builds a valid local book from buffered WebSocket events + REST snapshot.
+    """Build a valid local book from buffered WebSocket events + REST snapshot.
 
-    Binance depth synchronization requires buffering events before the snapshot,
-    then starting with an event spanning ``lastUpdateId + 1``. After that, each
-    event must be contiguous; a gap invalidates the book and triggers resync.
+    The buffer is treated as an observation-ordered FIFO. Events are never
+    sorted by update ID because doing so would hide out-of-order delivery.
+    Events before the first event spanning ``lastUpdateId + 1`` are skipped;
+    every subsequent event must continue the sequence without a gap.
     """
 
     def __init__(self, market_data: BinanceFuturesMarketData) -> None:
@@ -29,23 +30,29 @@ class OrderBookSynchronizer:
     async def sync(self, buffered: list[DepthUpdate]) -> SyncResult:
         last_id, bids, asks = await self.market_data.snapshot()
         book = OrderBook.from_snapshot(last_id, bids, asks)
-        events = sorted(
-            (e for e in buffered if e.final_update_id > last_id),
-            key=lambda e: (e.first_update_id, e.final_update_id),
-        )
 
         start = None
-        for index, event in enumerate(events):
+        for index, event in enumerate(buffered):
+            if event.final_update_id <= last_id:
+                continue
             if event.first_update_id <= last_id + 1 <= event.final_update_id:
                 start = index
                 break
+            if event.first_update_id > last_id + 1:
+                # The required bridge event has already been missed in the
+                # observation stream; do not sort later events into existence.
+                raise RuntimeError(
+                    f"snapshot cannot be synchronized: expected event spanning {last_id + 1}, "
+                    f"got {event.first_update_id}-{event.final_update_id}"
+                )
+
         if start is None:
             raise RuntimeError("snapshot cannot be synchronized from buffered events")
 
         applied = 0
         skipped = start
-        for event in events[start:]:
-            if event.first_update_id > book.last_update_id + 1:  # type: ignore[operator]
+        for event in buffered[start:]:
+            if event.first_update_id > book.last_update_id + 1:
                 raise RuntimeError(
                     f"depth gap during sync: expected {book.last_update_id + 1}, "
                     f"got {event.first_update_id}-{event.final_update_id}"
