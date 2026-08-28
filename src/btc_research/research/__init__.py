@@ -1,13 +1,14 @@
-from .costs import CostModel, CostResult
-from .evaluation import EvaluationResult, evaluate_predictions
+from .costs import CostModel, CostResult, apply_cost
+from .evaluation import EvaluationResult, evaluate_predictions, paired_differences
 from .hypothesis import ExperimentFamily, Hypothesis, ResearchFreeze
 from .labels import TripleBarrierLabel, triple_barrier_label
 from .model import LogisticModel, StandardScaler
-from .splits import WalkForwardSplit, generate_walk_forward_splits
+from .robustness import BootstrapResult, benjamini_hochberg, block_bootstrap_mean, uniqueness_weights
+from .splits import WalkForwardSplit, generate_walk_forward_splits, purge_and_embargo_indices
 
 __all__ = [
-    "CostModel", "CostResult", "EvaluationResult", "evaluate_predictions",
-    "ExperimentFamily", "Hypothesis", "ResearchFreeze", "TripleBarrierLabel",
-    "triple_barrier_label", "LogisticModel", "StandardScaler", "WalkForwardSplit",
-    "generate_walk_forward_splits",
+    "CostModel", "CostResult", "apply_cost", "EvaluationResult", "evaluate_predictions", "paired_differences",
+    "ExperimentFamily", "Hypothesis", "ResearchFreeze", "TripleBarrierLabel", "triple_barrier_label",
+    "LogisticModel", "StandardScaler", "BootstrapResult", "benjamini_hochberg", "block_bootstrap_mean",
+    "uniqueness_weights", "WalkForwardSplit", "generate_walk_forward_splits", "purge_and_embargo_indices",
 ]
