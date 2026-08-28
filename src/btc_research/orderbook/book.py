@@ -42,18 +42,24 @@ class OrderBook:
             else:
                 target[price] = quantity
 
-    def apply(self, update: DepthUpdate) -> None:
-        """Apply a Binance Futures diff update with its ``pu`` chain intact."""
+    def apply(self, update: DepthUpdate, *, bootstrap: bool = False) -> None:
+        """Apply a Futures diff, with a special validation path for the first event."""
         if self.last_update_id is None:
             raise ValueError("book is not initialized")
 
         if update.final_update_id < self.last_update_id:
             return
 
-        # Futures bootstrap permits the first event to overlap the snapshot
-        # (U <= lastUpdateId <= u) or explicitly chain from it (pu == lastUpdateId).
-        # After bootstrap, every event must continue the pu -> previous-u chain.
-        if update.previous_update_id is not None:
+        if bootstrap:
+            if not (
+                update.first_update_id <= self.last_update_id <= update.final_update_id
+                or update.previous_update_id == self.last_update_id
+            ):
+                raise ValueError(
+                    f"snapshot overlap invalid: last={self.last_update_id}, "
+                    f"got {update.first_update_id}-{update.final_update_id} pu={update.previous_update_id}"
+                )
+        elif update.previous_update_id is not None:
             if update.previous_update_id != self.last_update_id:
                 raise ValueError(
                     f"sequence chain gap: expected pu={self.last_update_id}, "
