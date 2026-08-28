@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 from pathlib import Path
+from typing import Iterator
 
 
 class RawEventArchive:
@@ -17,11 +18,12 @@ class RawEventArchive:
             "receive_time_ns": receive_time_ns,
             "raw_b64": base64.b64encode(raw).decode("ascii"),
         }
+        line = json.dumps(record, separators=(",", ":")).encode("utf-8")
         with self.path.open("ab") as handle:
-            handle.write(json.dumps(record, separators=(",", ":").encode("utf-8"))
+            handle.write(line)
             handle.write(b"\n")
 
-    def replay(self):
+    def replay(self) -> Iterator[tuple[int, bytes]]:
         with self.path.open("rb") as handle:
             for line in handle:
                 if not line.strip():
