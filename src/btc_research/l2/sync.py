@@ -38,15 +38,10 @@ class OrderBookSynchronizer:
         start: int | None = None
 
         for index, event in enumerate(buffered):
-            # Binance Futures: drop events whose final update is strictly
-            # before the snapshot ID. An event ending exactly at last_id may
-            # be the bridge via pu == last_id and must not be discarded.
             if event.final_update_id < last_id:
                 continue
 
-            overlaps_snapshot = (
-                event.first_update_id <= last_id <= event.final_update_id
-            )
+            overlaps_snapshot = event.first_update_id <= last_id <= event.final_update_id
             chains_snapshot = event.previous_update_id == last_id
             if overlaps_snapshot or chains_snapshot:
                 start = index
@@ -66,7 +61,7 @@ class OrderBookSynchronizer:
         for index, event in enumerate(buffered[start:], start=start):
             before = book.last_update_id
             try:
-                book.apply(event)
+                book.apply(event, bootstrap=index == start)
             except ValueError as exc:
                 raise RuntimeError(
                     f"depth sequence invalid at buffered event {index}: {exc}"
