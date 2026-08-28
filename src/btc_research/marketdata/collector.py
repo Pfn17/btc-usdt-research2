@@ -75,6 +75,7 @@ class FuturesL2Collector:
     metrics: CollectorMetrics = field(default_factory=CollectorMetrics)
     contaminated_intervals: list[ContaminatedInterval] = field(default_factory=list)
     _contamination_start_ms: int | None = field(default=None, init=False, repr=False)
+    _contamination_reason: str = field(default="sequence_integrity_failure", init=False, repr=False)
 
     def __post_init__(self) -> None:
         self.symbol = self.symbol.upper()
@@ -127,42 +128,47 @@ class FuturesL2Collector:
             max_queue=None,
         ) as websocket:
             self.state = CollectorState.SYNCING
-            await self._synchronize(websocket, stop_event)
+            try:
+                await self._synchronize(websocket, stop_event)
 
-            while not stop_event.is_set():
-                try:
-                    raw = await asyncio.wait_for(websocket.recv(), timeout=1.0)
-                except asyncio.TimeoutError:
-                    continue
-                except ConnectionClosed:
-                    raise
+                while not stop_event.is_set():
+                    try:
+                        raw = await asyncio.wait_for(websocket.recv(), timeout=1.0)
+                    except asyncio.TimeoutError:
+                        continue
+                    except ConnectionClosed:
+                        self._mark_transport_contamination()
+                        raise
 
-                update = self._decode_and_archive(raw)
-                if update.symbol != self.symbol:
-                    continue
-                self._record_received(update)
+                    update = self._decode_and_archive(raw)
+                    if update.symbol != self.symbol:
+                        continue
+                    self._record_received(update)
 
-                validator = self._validator
-                if validator is None or self.book is None:
-                    raise CollectorIntegrityError("collector has no synchronized state")
+                    validator = self._validator
+                    if validator is None or self.book is None:
+                        raise CollectorIntegrityError("collector has no synchronized state")
 
-                result = validator.accept(update)
-                if result.status is IntegrityStatus.DUPLICATE:
-                    self.metrics.duplicate_events += 1
-                    continue
-                if result.status is not IntegrityStatus.VALID:
-                    self._record_integrity_failure(update, result.status)
-                    self.metrics.resynchronizations += 1
-                    self.state = CollectorState.SYNCING
-                    await self._synchronize(websocket, stop_event)
-                    continue
+                    result = validator.accept(update)
+                    if result.status is IntegrityStatus.DUPLICATE:
+                        self.metrics.duplicate_events += 1
+                        continue
+                    if result.status is not IntegrityStatus.VALID:
+                        self._record_integrity_failure(update, result.status)
+                        self.metrics.resynchronizations += 1
+                        self.state = CollectorState.SYNCING
+                        await self._synchronize(websocket, stop_event)
+                        continue
 
-                self.book.apply(update)
-                self._record_accepted(update)
-                if self._contamination_start_ms is not None:
-                    self._close_contamination(update.event_time_ms)
-                self.state = CollectorState.VALID
-                await self._emit(update)
+                    self.book.apply(update)
+                    self._record_accepted(update)
+                    if self._contamination_start_ms is not None:
+                        self._close_contamination(update.event_time_ms)
+                    self.state = CollectorState.VALID
+                    await self._emit(update)
+            except ConnectionClosed:
+                self._mark_transport_contamination()
+                raise
 
     _validator: SequenceValidator | None = field(default=None, init=False, repr=False)
 
@@ -178,6 +184,7 @@ class FuturesL2Collector:
                 except asyncio.TimeoutError:
                     continue
                 except ConnectionClosed:
+                    self._mark_transport_contamination()
                     raise
                 update = self._decode_and_archive(raw)
                 if update.symbol != self.symbol:
@@ -185,6 +192,7 @@ class FuturesL2Collector:
                 self._record_received(update)
                 buffer.append(update)
                 if len(buffer) > self.max_buffered_events:
+                    self._mark_transport_contamination()
                     raise CollectorIntegrityError("WebSocket buffer exceeded maximum during snapshot")
 
             if stop_event.is_set():
@@ -247,6 +255,14 @@ class FuturesL2Collector:
         if self.book is not None:
             self.metrics.last_update_id = self.book.last_update_id
 
+    def _mark_transport_contamination(self) -> None:
+        if self._contamination_start_ms is None and self.metrics.last_event_time_ms is not None:
+            self._contamination_start_ms = self.metrics.last_event_time_ms
+            self._contamination_reason = "websocket_disconnect"
+        self.state = CollectorState.CONTAMINATED
+        self.book = None
+        self._validator = None
+
     def _record_integrity_failure(self, update: DepthUpdate, status: IntegrityStatus) -> None:
         if status is IntegrityStatus.GAP:
             self.metrics.sequence_gaps += 1
@@ -254,6 +270,7 @@ class FuturesL2Collector:
             self.metrics.previous_id_mismatches += 1
         if self._contamination_start_ms is None:
             self._contamination_start_ms = update.event_time_ms
+        self._contamination_reason = status.value.lower()
         self.state = CollectorState.CONTAMINATED
         self.book = None
         self._validator = None
@@ -265,10 +282,11 @@ class FuturesL2Collector:
             ContaminatedInterval(
                 start_ms=self._contamination_start_ms,
                 end_ms=recovered_event_time_ms,
-                reason="sequence_integrity_failure",
+                reason=self._contamination_reason,
             )
         )
         self._contamination_start_ms = None
+        self._contamination_reason = "sequence_integrity_failure"
 
     async def _emit(self, update: DepthUpdate | None) -> None:
         if update is None or self.on_valid_update is None or self.book is None:
