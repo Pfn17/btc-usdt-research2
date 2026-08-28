@@ -43,29 +43,45 @@ class L2Collector:
     def stop(self) -> None:
         self._stop.set()
 
+    async def _wait_for_buffer_progress(self, previous_len: int, timeout_s: float = 2.0) -> None:
+        deadline = asyncio.get_running_loop().time() + timeout_s
+        while len(self.buffer) <= previous_len and not self._stop.is_set():
+            remaining = deadline - asyncio.get_running_loop().time()
+            if remaining <= 0:
+                return
+            await asyncio.sleep(min(0.05, remaining))
+
     async def bootstrap(self) -> OrderBook:
-        """Build a synchronized book without discarding events needed by retry."""
+        """Build a synchronized book while preserving the live FIFO buffer."""
         self._bootstrapping = True
         try:
-            for attempt in range(1, 11):
+            for attempt in range(1, 21):
                 last_id, bids, asks = await self.market_data.snapshot()
+
+                # A REST snapshot can be newer than the events received so far.
+                # Wait briefly for the WebSocket observation window to advance
+                # before declaring the snapshot un-alignable.
                 buffered = self.buffer.snapshot()
+                target = last_id + 1
+                latest_u = buffered[-1].final_update_id if buffered else None
+                if latest_u is None or latest_u < target:
+                    await self._wait_for_buffer_progress(len(buffered), timeout_s=1.0)
+                    buffered = self.buffer.snapshot()
+
                 try:
                     result = self.syncer.sync_snapshot(last_id, bids, asks, buffered)
                 except RuntimeError as exc:
                     log.warning(
-                        "snapshot synchronization unavailable (attempt %d/10): %s; waiting for stream alignment",
+                        "snapshot synchronization unavailable (attempt %d/20): %s; waiting for stream alignment",
                         attempt,
                         exc,
                     )
-                    if attempt == 10:
+                    if attempt == 20:
                         raise
-                    await asyncio.sleep(0.2)
+                    await asyncio.sleep(0.1)
                     continue
 
-                # Detach only after the buffered observation window has been
-                # validated. New websocket events arriving after this point
-                # remain in the live buffer and are not lost.
+                # Detach only after the observation window has been validated.
                 self.buffer.swap()
                 self.book = result.book
                 self.events_applied += result.applied_events
