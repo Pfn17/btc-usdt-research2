@@ -44,17 +44,40 @@ class L2Collector:
         self._stop.set()
 
     async def bootstrap(self) -> OrderBook:
-        """Rebuild without losing events received while REST is in flight."""
+        """Rebuild the local book without losing events received during REST snapshots.
+
+        Binance may return a snapshot whose ``lastUpdateId`` is ahead of all
+        buffered events. Those events are legitimately stale relative to the
+        snapshot, so bootstrap retries the REST snapshot instead of treating
+        the condition as a collector crash. Events received after the buffer
+        swap remain in the live buffer and are applied by the consumer after
+        the new book is installed.
+        """
         self._bootstrapping = True
         try:
-            last_id, bids, asks = await self.market_data.snapshot()
-            buffered = self.buffer.swap()
-            result = self.syncer.sync_snapshot(last_id, bids, asks, buffered)
-            self.book = result.book
-            self.events_applied += result.applied_events
-            self.resyncs += 1
-            self.contaminated = False
-            return self.book
+            for attempt in range(1, 6):
+                last_id, bids, asks = await self.market_data.snapshot()
+                buffered = self.buffer.swap()
+                try:
+                    result = self.syncer.sync_snapshot(last_id, bids, asks, buffered)
+                except RuntimeError as exc:
+                    log.warning(
+                        "snapshot synchronization unavailable (attempt %d/5): %s; retrying snapshot",
+                        attempt,
+                        exc,
+                    )
+                    if attempt == 5:
+                        raise
+                    await asyncio.sleep(0.1)
+                    continue
+
+                self.book = result.book
+                self.events_applied += result.applied_events
+                self.resyncs += 1
+                self.contaminated = False
+                return self.book
+
+            raise RuntimeError("snapshot bootstrap exhausted retries")
         finally:
             self._bootstrapping = False
 
