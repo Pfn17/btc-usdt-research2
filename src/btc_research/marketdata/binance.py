@@ -26,6 +26,7 @@ class BinanceFuturesMarketData:
         *,
         rest_min_interval_s: float = 0.25,
         max_snapshot_retries: int = 3,
+        client: httpx.AsyncClient | None = None,
     ) -> None:
         self.api_url = api_url.rstrip("/")
         self.symbol = symbol.upper()
@@ -34,15 +35,17 @@ class BinanceFuturesMarketData:
         self.max_snapshot_retries = max_snapshot_retries
         self.rate_limiter = RestRateLimiter(rest_min_interval_s)
         self._snapshot_lock = asyncio.Lock()
-        self._client: httpx.AsyncClient | None = None
+        self._client = client
+        self._owns_client = client is None
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(timeout=10)
+            self._owns_client = True
         return self._client
 
     async def aclose(self) -> None:
-        if self._client is not None and not self._client.is_closed:
+        if self._owns_client and self._client is not None and not self._client.is_closed:
             await self._client.aclose()
 
     @staticmethod
@@ -61,8 +64,8 @@ class BinanceFuturesMarketData:
         """Fetch one snapshot while preventing request bursts.
 
         Concurrent snapshot callers are serialized. A 429/418 response uses
-        Retry-After when supplied, otherwise exponential backoff with jitter.
-        5xx responses receive the same transient retry treatment.
+        Retry-After when supplied, otherwise exponential backoff. 5xx
+        responses receive the same transient retry treatment.
         """
         async with self._snapshot_lock:
             client = await self._get_client()
@@ -84,11 +87,7 @@ class BinanceFuturesMarketData:
 
                 if response.status_code in (429, 418) or response.status_code >= 500:
                     retry_after = self._retry_after(response)
-                    if response.status_code in (429, 418):
-                        self.rate_limiter.record_retry(response.status_code, retry_after)
-                    else:
-                        self.rate_limiter.record_retry(response.status_code, retry_after)
-
+                    self.rate_limiter.record_retry(response.status_code, retry_after)
                     last_error = httpx.HTTPStatusError(
                         f"Binance snapshot returned HTTP {response.status_code}",
                         request=response.request,
@@ -96,7 +95,6 @@ class BinanceFuturesMarketData:
                     )
                     if attempt >= self.max_snapshot_retries:
                         raise last_error
-
                     delay = retry_after if retry_after is not None else min(
                         8.0, 0.5 * (2**attempt)
                     )
@@ -105,7 +103,6 @@ class BinanceFuturesMarketData:
 
                 response.raise_for_status()
                 payload: dict[str, Any] = response.json()
-
                 bids = [PriceLevel(str(p), str(q)) for p, q in payload["bids"]]
                 asks = [PriceLevel(str(p), str(q)) for p, q in payload["asks"]]
                 return int(payload["lastUpdateId"]), bids, asks
