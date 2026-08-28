@@ -10,6 +10,7 @@ class IntegrityStatus(str, Enum):
     VALID = "VALID"
     DUPLICATE = "DUPLICATE"
     GAP = "GAP"
+    PREVIOUS_ID_MISMATCH = "PREVIOUS_ID_MISMATCH"
 
 
 @dataclass(frozen=True)
@@ -21,10 +22,21 @@ class IntegrityResult:
 
 
 class SequenceValidator:
-    """Validate contiguous Binance depth update IDs before applying them."""
+    """Validate USDⓈ-M Futures diff-depth continuity.
+
+    The first stream event after a REST snapshot must satisfy:
+        U <= snapshot_last_update_id + 1 <= u
+
+    Every later event must satisfy:
+        pu == previous accepted event's u
+
+    Duplicate/old events are ignored. Any sequence break invalidates the
+    stream and requires snapshot resynchronization by the caller.
+    """
 
     def __init__(self, last_update_id: int | None = None) -> None:
         self.last_update_id = last_update_id
+        self._seen_stream_event = False
 
     def validate(self, update: DepthUpdate) -> IntegrityResult:
         if self.last_update_id is None:
@@ -36,6 +48,7 @@ class SequenceValidator:
             )
 
         expected = self.last_update_id + 1
+
         if update.final_update_id <= self.last_update_id:
             return IntegrityResult(
                 IntegrityStatus.DUPLICATE,
@@ -43,13 +56,30 @@ class SequenceValidator:
                 update.first_update_id,
                 update.final_update_id,
             )
-        if update.first_update_id > expected:
+
+        if self._seen_stream_event:
+            if update.previous_update_id != self.last_update_id:
+                return IntegrityResult(
+                    IntegrityStatus.PREVIOUS_ID_MISMATCH,
+                    expected,
+                    update.first_update_id,
+                    update.final_update_id,
+                )
+            if update.first_update_id > expected:
+                return IntegrityResult(
+                    IntegrityStatus.GAP,
+                    expected,
+                    update.first_update_id,
+                    update.final_update_id,
+                )
+        elif not (update.first_update_id <= expected <= update.final_update_id):
             return IntegrityResult(
                 IntegrityStatus.GAP,
                 expected,
                 update.first_update_id,
                 update.final_update_id,
             )
+
         return IntegrityResult(
             IntegrityStatus.VALID,
             expected,
@@ -61,4 +91,5 @@ class SequenceValidator:
         result = self.validate(update)
         if result.status is IntegrityStatus.VALID:
             self.last_update_id = update.final_update_id
+            self._seen_stream_event = True
         return result
