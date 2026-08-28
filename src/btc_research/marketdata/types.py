@@ -18,6 +18,7 @@ class DepthUpdate:
     bids: Sequence[PriceLevel]
     asks: Sequence[PriceLevel]
     raw_event: bytes
+    previous_update_id: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
