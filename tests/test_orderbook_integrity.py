@@ -10,19 +10,19 @@ from btc_research.orderbook import OrderBook
 def update(first: int, final: int, bid_qty: str = "1") -> DepthUpdate:
     return DepthUpdate(
         symbol="BTCUSDT",
-        exchange_timestamp_ms=1,
-        local_receive_timestamp_ms=2,
+        event_time_ms=1,
+        receive_time_ns=2,
         first_update_id=first,
         final_update_id=final,
-        previous_update_id=None,
         bids=[PriceLevel("100", bid_qty)],
         asks=[PriceLevel("101", "2")],
+        raw_event=b"{}",
     )
 
 
 def test_validator_accepts_contiguous_updates():
     validator = SequenceValidator(100)
-    assert validator.accept(update(101, 102)).status is IntegrityStatus.VALID
+    assert validator.validate(update(101, 102)).status is IntegrityStatus.VALID
     assert validator.last_update_id == 102
 
 
