@@ -98,12 +98,16 @@ class SupabaseResearchClient:
 
     def stop_stale_sessions(self, owner_id: str = "railway-worker", stale_after_seconds: int = 120) -> int:
         cutoff = (datetime.now(timezone.utc) - timedelta(seconds=stale_after_seconds)).isoformat()
-        rows = self.select("research_sessions", f"select=id&owner_id=eq.{quote(owner_id)}&status=eq.running&last_heartbeat_at=lt.{quote(cutoff)}&limit=100")
-        stopped = 0
-        for row in rows:
-            self.stop_session(row["id"])
-            stopped += 1
-        return stopped
+        queries = (
+            f"select=id&owner_id=eq.{quote(owner_id)}&status=eq.running&last_heartbeat_at=lt.{quote(cutoff)}&limit=100",
+            f"select=id&owner_id=eq.{quote(owner_id)}&status=eq.running&last_heartbeat_at=is.null&started_at=lt.{quote(cutoff)}&limit=100",
+        )
+        ids: set[str] = set()
+        for query in queries:
+            ids.update(str(row["id"]) for row in self.select("research_sessions", query))
+        for session_id in ids:
+            self.stop_session(session_id)
+        return len(ids)
 
     def insert_session(self, symbol: str, mode: str = "paper", owner_id: str = "railway-worker") -> list[dict[str, Any]]:
         now = datetime.now(timezone.utc).isoformat()
