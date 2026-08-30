@@ -4,6 +4,7 @@ import os
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -46,6 +47,17 @@ class SupabaseResearchClient:
         "contamination_intervals": (
             frozenset({"session_id", "started_at", "ended_at", "reason"}),
             frozenset({"session_id", "started_at", "reason"}),
+        ),
+        "collector_health": (
+            frozenset({
+                "session_id", "feed_status", "integrity_status", "events_received", "events_applied",
+                "duplicate_events", "sequence_gaps", "resync_count", "stale_after_ms", "latency_ms",
+                "contamination_active", "updated_at", "last_update_id",
+            }),
+            frozenset({
+                "session_id", "feed_status", "integrity_status", "events_received", "events_applied",
+                "duplicate_events", "sequence_gaps", "resync_count", "contamination_active", "updated_at",
+            }),
         ),
     }
 
@@ -92,17 +104,24 @@ class SupabaseResearchClient:
         if missing:
             raise ValueError(f"{table} payload is missing required columns: {sorted(missing)}")
 
-    def insert(self, table: str, rows: dict[str, Any] | list[dict[str, Any]]) -> list[dict[str, Any]]:
+    @classmethod
+    def _validate_rows(cls, table: str, rows: dict[str, Any] | list[dict[str, Any]]) -> None:
         payloads = rows if isinstance(rows, list) else [rows]
         for payload in payloads:
-            self._validate_payload(table, payload)
+            if not isinstance(payload, dict):
+                raise TypeError(f"{table} payload must be a dict")
+            cls._validate_payload(table, payload)
+
+    def insert(self, table: str, rows: dict[str, Any] | list[dict[str, Any]]) -> list[dict[str, Any]]:
+        self._validate_rows(table, rows)
         response = self._client.post(f"/{table}", json=rows, headers={"Prefer": "return=representation"})
         response.raise_for_status()
         return response.json()
 
     def upsert(self, table: str, rows: dict[str, Any] | list[dict[str, Any]], on_conflict: str) -> list[dict[str, Any]]:
+        self._validate_rows(table, rows)
         response = self._client.post(
-            f"/{table}?on_conflict={on_conflict}",
+            f"/{table}?on_conflict={quote(on_conflict, safe=',')}",
             json=rows,
             headers={"Prefer": "resolution=merge-duplicates,return=representation"},
         )
