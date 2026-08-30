@@ -60,6 +60,15 @@ class SupabaseResearchClient:
         response.raise_for_status()
         return response.json()
 
+    def update(self, table: str, filters: str, values: dict[str, Any]) -> list[dict[str, Any]]:
+        response = self._client.patch(
+            f"/{table}?{filters}",
+            json=values,
+            headers={"Prefer": "return=representation"},
+        )
+        response.raise_for_status()
+        return response.json()
+
     def select(self, table: str, query: str = "select=*&limit=100") -> list[dict[str, Any]]:
         response = self._client.get(f"/{table}?{query}")
         response.raise_for_status()
@@ -73,6 +82,16 @@ class SupabaseResearchClient:
             "status": "running",
             "started_at": datetime.now(timezone.utc).isoformat(),
         })
+
+    def stop_session(self, session_id: str) -> list[dict[str, Any]]:
+        return self.update(
+            "research_sessions",
+            f"id=eq.{session_id}",
+            {
+                "status": "stopped",
+                "stopped_at": datetime.now(timezone.utc).isoformat(),
+            },
+        )
 
     def insert_feature_snapshot(self, session_id: str, snapshot: Any) -> list[dict[str, Any]]:
         payload = self._payload(snapshot)
