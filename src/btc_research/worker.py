@@ -65,10 +65,6 @@ async def main() -> None:
         try:
             archive.append(update)
         except OSError as exc:
-            # Raw archive is a research source of truth. Continuing after an
-            # ENOSPC/I/O failure would make the live stream appear healthy while
-            # silently losing the immutable raw record. Fail closed instead of
-            # entering a reconnect loop that can hammer the exchange.
             log.critical("raw archive unavailable; stopping collector: %s", exc)
             request_stop()
             raise
@@ -87,6 +83,7 @@ async def main() -> None:
             log.error("feature persistence queue full; feature snapshot not persisted")
 
     async def feature_persistence_loop() -> None:
+        failure_backoff = 1.0
         while not stop_event.is_set() or not feature_queue.empty():
             try:
                 snapshot = await asyncio.wait_for(feature_queue.get(), timeout=1.0)
@@ -94,8 +91,14 @@ async def main() -> None:
                 continue
             try:
                 await asyncio.to_thread(supabase.insert_feature_snapshot, session_id, snapshot)
+                failure_backoff = 1.0
             except Exception:
-                log.exception("failed to persist live feature snapshot")
+                log.exception("failed to persist live feature snapshot; backing off %.1fs", failure_backoff)
+                try:
+                    await asyncio.wait_for(stop_event.wait(), timeout=failure_backoff)
+                except asyncio.TimeoutError:
+                    pass
+                failure_backoff = min(failure_backoff * 2.0, 30.0)
             finally:
                 feature_queue.task_done()
 
@@ -106,12 +109,14 @@ async def main() -> None:
                 last_update_id = collector.book.last_update_id if collector.book else None
                 buffered = collector.buffer.snapshot()
                 last_event_ms = buffered[-1].event_time_ms if buffered else None
+                last_receive_ns = buffered[-1].receive_time_ns if buffered else None
                 stale_after_ms = None
                 latency_ms = None
                 if last_event_ms is not None:
                     now_ms = time.time_ns() // 1_000_000
-                    stale_after_ms = max(0, now_ms - last_event_ms)
-                    latency_ms = stale_after_ms
+                    stale_after_ms = max(0, now_ms - (last_receive_ns // 1_000_000 if last_receive_ns is not None else now_ms))
+                    if last_receive_ns is not None:
+                        latency_ms = max(0, (last_receive_ns // 1_000_000) - last_event_ms)
                 feed_status = "connected" if collector.events_received else "starting"
                 if stale_after_ms is not None and stale_after_ms > 5_000:
                     feed_status = "stale"
