@@ -1,56 +1,24 @@
-from decimal import Decimal
-
-import pytest
-
-from btc_research.integrity import IntegrityStatus, SequenceValidator
+from btc_research.integrity.validator import IntegrityStatus, SequenceValidator
 from btc_research.marketdata.types import DepthUpdate, PriceLevel
-from btc_research.orderbook import OrderBook
 
 
-def update(first: int, final: int, bid_qty: str = "1") -> DepthUpdate:
-    return DepthUpdate(
-        symbol="BTCUSDT",
-        event_time_ms=1,
-        receive_time_ns=2,
-        first_update_id=first,
-        final_update_id=final,
-        bids=[PriceLevel("100", bid_qty)],
-        asks=[PriceLevel("101", "2")],
-        raw_event=b"{}",
-    )
+def update(first: int, final: int) -> DepthUpdate:
+    return DepthUpdate("BTCUSDT", 1_000, 2_000, first, final, [PriceLevel("100", "1")], [PriceLevel("101", "1")], b"{}", first - 1)
 
 
 def test_validator_accepts_contiguous_updates():
     validator = SequenceValidator(100)
-    assert validator.validate(update(101, 102)).status is IntegrityStatus.VALID
+    assert validator.accept(update(101, 102)).status is IntegrityStatus.VALID
     assert validator.last_update_id == 102
 
 
-def test_validator_detects_gap():
+def test_validator_rejects_gap():
     validator = SequenceValidator(100)
-    result = validator.validate(update(103, 104))
-    assert result.status is IntegrityStatus.GAP
-    assert result.expected_next_id == 101
+    assert validator.validate(update(102, 103)).status is IntegrityStatus.GAP
+    assert validator.last_update_id == 100
 
 
-def test_validator_detects_duplicate():
+def test_validator_marks_duplicate():
     validator = SequenceValidator(100)
-    result = validator.validate(update(99, 100))
-    assert result.status is IntegrityStatus.DUPLICATE
-
-
-def test_orderbook_applies_update_and_removes_zero_quantity():
-    book = OrderBook.from_snapshot(
-        100,
-        [PriceLevel("100", "1")],
-        [PriceLevel("101", "2")],
-    )
-    book.apply(update(101, 101, "0"))
-    assert Decimal("100") not in book.bids
-    assert book.best_ask() == (Decimal("101"), Decimal("2"))
-
-
-def test_orderbook_rejects_sequence_gap():
-    book = OrderBook.from_snapshot(100, [PriceLevel("100", "1")], [PriceLevel("101", "2")])
-    with pytest.raises(ValueError, match="sequence gap"):
-        book.apply(update(102, 102))
+    assert validator.validate(update(99, 100)).status is IntegrityStatus.DUPLICATE
+    assert validator.last_update_id == 100

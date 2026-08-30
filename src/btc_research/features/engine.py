@@ -33,11 +33,12 @@ class FeatureEngine:
             raise ValueError("depth_levels and window_ms must be positive")
         self.depth_levels = depth_levels
         self.window_ms = window_ms
-        self.store = store or InMemoryFeatureStore()
+        self.store = store if store is not None else InMemoryFeatureStore()
         self.metrics = FeaturePerformance()
         self._mid_history: deque[_TimedPoint] = deque()
         self._flow_history: deque[_TimedPoint] = deque()
         self._previous_qty: dict[tuple[str, str], Decimal] = {}
+        self._flow_baseline_seeded = False
 
     def _trim(self, now_ms: int) -> None:
         cutoff = now_ms - self.window_ms
@@ -51,7 +52,18 @@ class FeatureEngine:
         values = book.bids.items() if side == "bid" else book.asks.items()
         return sorted(values, reverse=(side == "bid"))[:n]
 
+    def _seed_order_flow_baseline(self, book: OrderBook) -> None:
+        self._previous_qty = {
+            ("bid", str(price)): quantity for price, quantity in book.bids.items()
+        }
+        self._previous_qty.update({
+            ("ask", str(price)): quantity for price, quantity in book.asks.items()
+        })
+        self._flow_baseline_seeded = True
+
     def _order_flow(self, update: DepthUpdate) -> float:
+        if not self._flow_baseline_seeded:
+            return 0.0
         flow = Decimal("0")
         for side_name, levels in (("bid", update.bids), ("ask", update.asks)):
             sign = Decimal("1") if side_name == "bid" else Decimal("-1")
@@ -94,7 +106,11 @@ class FeatureEngine:
             now_ms = update.event_time_ms
             self._trim(now_ms)
             self._mid_history.append(_TimedPoint(now_ms, float(mid)))
-            flow = self._order_flow(update)
+            if not self._flow_baseline_seeded:
+                self._seed_order_flow_baseline(book)
+                flow = 0.0
+            else:
+                flow = self._order_flow(update)
             self._flow_history.append(_TimedPoint(now_ms, flow))
             flow_1s = sum(x.value for x in self._flow_history)
 

@@ -41,7 +41,7 @@ def test_sync_rejects_missing_bridge_without_sorting() -> None:
         try:
             await synchronizer.sync([event(102), event(101)])
         except RuntimeError as exc:
-            assert "expected overlap/pu with 100" in str(exc)
+            assert "snapshot behind buffered stream" in str(exc)
         else:
             raise AssertionError("out-of-order buffer must not be sorted into a valid sync")
 

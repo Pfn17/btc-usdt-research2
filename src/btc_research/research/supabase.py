@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import os
 from dataclasses import asdict, is_dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
 
 
 class SupabaseResearchClient:
-    """Small PostgREST client for the M5 research registry.
+    """Small PostgREST client for the research registry.
 
     Required environment variables:
       SUPABASE_URL
@@ -50,10 +51,54 @@ class SupabaseResearchClient:
         response.raise_for_status()
         return response.json()
 
+    def upsert(self, table: str, rows: dict[str, Any] | list[dict[str, Any]], on_conflict: str) -> list[dict[str, Any]]:
+        response = self._client.post(
+            f"/{table}?on_conflict={on_conflict}",
+            json=rows,
+            headers={"Prefer": "resolution=merge-duplicates,return=representation"},
+        )
+        response.raise_for_status()
+        return response.json()
+
     def select(self, table: str, query: str = "select=*&limit=100") -> list[dict[str, Any]]:
         response = self._client.get(f"/{table}?{query}")
         response.raise_for_status()
         return response.json()
+
+    def insert_session(self, symbol: str, mode: str = "paper", owner_id: str = "railway-worker") -> list[dict[str, Any]]:
+        return self.insert("research_sessions", {
+            "owner_id": owner_id,
+            "symbol": symbol.upper(),
+            "mode": mode,
+            "status": "running",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+    def insert_feature_snapshot(self, session_id: str, snapshot: Any) -> list[dict[str, Any]]:
+        payload = self._payload(snapshot)
+        if not isinstance(payload, dict):
+            raise TypeError("feature snapshot must be a dataclass or dict")
+        return self.insert("feature_snapshots", {"session_id": session_id, **payload})
+
+    def insert_paper_signal(self, session_id: str, signal: Any) -> list[dict[str, Any]]:
+        payload = self._payload(signal)
+        if not isinstance(payload, dict):
+            raise TypeError("paper signal must be a dataclass or dict")
+        return self.insert("paper_signals", {"session_id": session_id, **payload})
+
+    def insert_collector_health(self, session_id: str, health: dict[str, Any]) -> list[dict[str, Any]]:
+        return self.upsert("collector_health", {"session_id": session_id, **health}, "session_id")
+
+    def insert_contamination_interval(self, session_id: str, interval: Any) -> list[dict[str, Any]]:
+        payload = self._payload(interval)
+        if not isinstance(payload, dict):
+            raise TypeError("contamination interval must be a dataclass or dict")
+        if "start_ms" in payload:
+            payload["started_at"] = datetime.fromtimestamp(payload.pop("start_ms") / 1000, tz=timezone.utc).isoformat()
+        if "end_ms" in payload:
+            end_ms = payload.pop("end_ms")
+            payload["ended_at"] = None if end_ms is None else datetime.fromtimestamp(end_ms / 1000, tz=timezone.utc).isoformat()
+        return self.insert("contamination_intervals", {"session_id": session_id, **payload})
 
     def insert_hypothesis(self, hypothesis: Any, target_definition: dict[str, Any] | None = None, feature_set: list[str] | None = None) -> list[dict[str, Any]]:
         return self.insert("research_hypotheses", {

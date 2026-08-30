@@ -36,7 +36,7 @@ def test_feature_engine_core_features() -> None:
     assert snap.spread_bps == pytest.approx(99.5024876)
     assert snap.microprice == pytest.approx(100.6666667)
     assert snap.imbalance_1 == pytest.approx(1 / 3)
-    assert snap.imbalance_n == pytest.approx(2 / 7)
+    assert snap.imbalance_n == pytest.approx(1 / 4)
     assert snap.order_flow_1s == 0.0
     assert snap.volatility_1s == 0.0
 

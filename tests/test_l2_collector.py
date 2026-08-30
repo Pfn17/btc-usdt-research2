@@ -34,7 +34,8 @@ def test_sync_accepts_futures_snapshot_overlap_and_pu_chain() -> None:
             [event(10, 10, 9), event(12, 11, 10), event(13, 13, 12)]
         )
         assert result.book.last_update_id == 13
-        assert result.applied_events == 3
+        assert result.applied_events == 2
+        assert result.skipped_events == 1
         assert result.book.bids
 
     import asyncio
