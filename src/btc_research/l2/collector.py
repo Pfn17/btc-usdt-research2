@@ -4,6 +4,7 @@ import asyncio
 import logging
 from collections.abc import Callable
 
+import httpx
 from websockets.asyncio.client import ClientConnection, connect
 
 from btc_research.marketdata.binance import BinanceFuturesMarketData
@@ -19,7 +20,7 @@ log = logging.getLogger(__name__)
 class L2Collector:
     """Resilient Binance Futures depth collector with automatic book resync."""
 
-    def __init__(self, market_data: BinanceFuturesMarketData, websocket_url: str, symbol: str = "BTCUSDT", buffer_size: int = 10_000, reconnect_min_s: float = 1.0, reconnect_max_s: float = 30.0) -> None:
+    def __init__(self, market_data: BinanceFuturesMarketData, websocket_url: str, symbol: str = "BTCUSDT", buffer_size: int = 10_000, reconnect_min_s: float = 2.0, reconnect_max_s: float = 60.0) -> None:
         self.market_data = market_data
         self.websocket_url = websocket_url.rstrip("/")
         self.symbol = symbol.lower()
@@ -51,12 +52,39 @@ class L2Collector:
                 return
             await asyncio.sleep(min(0.05, remaining))
 
+    @staticmethod
+    def _retry_after_seconds(exc: httpx.HTTPStatusError) -> float | None:
+        value = exc.response.headers.get("Retry-After")
+        if value is None:
+            return None
+        try:
+            return max(0.0, float(value))
+        except ValueError:
+            return None
+
     async def bootstrap(self) -> OrderBook:
         """Build a synchronized book while preserving the live FIFO buffer."""
         self._bootstrapping = True
+        delay = self.reconnect_min_s
         try:
             for attempt in range(1, 21):
-                last_id, bids, asks = await self.market_data.snapshot()
+                try:
+                    last_id, bids, asks = await self.market_data.snapshot()
+                except httpx.HTTPStatusError as exc:
+                    retry_after = self._retry_after_seconds(exc)
+                    if exc.response.status_code in (418, 429):
+                        wait_s = retry_after if retry_after is not None else min(delay, self.reconnect_max_s)
+                        log.error("Binance snapshot returned HTTP %d; backing off %.1fs", exc.response.status_code, wait_s)
+                        if attempt == 20:
+                            raise
+                        try:
+                            await asyncio.wait_for(self._stop.wait(), timeout=wait_s)
+                        except asyncio.TimeoutError:
+                            pass
+                        delay = min(max(delay * 2, self.reconnect_min_s), self.reconnect_max_s)
+                        continue
+                    raise
+
                 buffered = self.buffer.snapshot()
                 target = last_id + 1
                 latest_u = buffered[-1].final_update_id if buffered else None
@@ -106,8 +134,6 @@ class L2Collector:
             event = self.market_data.decode_depth_message(message)
             self.events_received += 1
             self.buffer.append(event)
-            # Raw archive sees every real exchange event, including events that
-            # later fail sequence/order-book validation.
             if on_raw:
                 on_raw(event)
 
@@ -118,8 +144,6 @@ class L2Collector:
                 self.book.apply(event)
                 if self.book.last_update_id != before:
                     self.events_applied += 1
-                    # Feature/signal consumers only see an event after it has
-                    # been successfully applied to a synchronized local book.
                     if on_update:
                         on_update(event)
             except ValueError:
