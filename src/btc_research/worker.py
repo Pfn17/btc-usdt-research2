@@ -3,11 +3,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import signal
 import time
 from datetime import datetime, timezone
 
 from btc_research.archive.writer import ArchiveWriter
 from btc_research.config import Settings
+from btc_research.features.engine import FeatureEngine
 from btc_research.l2.collector import L2Collector
 from btc_research.marketdata.binance import BinanceFuturesMarketData
 from btc_research.research.supabase import SupabaseResearchClient
@@ -32,6 +34,7 @@ async def main() -> None:
         symbol=settings.symbol,
         buffer_size=10_000,
     )
+    features = FeatureEngine(depth_levels=10, window_ms=1_000)
 
     supabase_url = os.environ.get("SUPABASE_URL", "")
     supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
@@ -45,11 +48,57 @@ async def main() -> None:
         raise RuntimeError("Supabase did not return a research session id")
     session_id = session_rows[0]["id"]
 
-    def on_update(update) -> None:
+    stop_event = asyncio.Event()
+    feature_queue: asyncio.Queue = asyncio.Queue(maxsize=20_000)
+
+    def request_stop() -> None:
+        if not stop_event.is_set():
+            log.info("shutdown requested")
+            stop_event.set()
+            collector.stop()
+
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            loop.add_signal_handler(sig, request_stop)
+        except (NotImplementedError, RuntimeError):
+            # Windows/test environments may not support asyncio signal handlers.
+            pass
+
+    def on_raw(update) -> None:
+        # Archive every real exchange event, regardless of later validity.
         archive.append(update)
 
+    def on_update(update) -> None:
+        # Collector invokes this only after the synchronized local book accepts
+        # the event, so invalid/contaminated events cannot create features.
+        try:
+            snapshot = features.compute(collector.book, update)
+        except Exception:
+            log.exception("feature computation rejected live update")
+            return
+        try:
+            feature_queue.put_nowait(snapshot)
+        except asyncio.QueueFull:
+            # Never block the market-data hot path. Dropping a persistence item
+            # is observable and does not fabricate a feature or signal.
+            log.error("feature persistence queue full; feature snapshot not persisted")
+
+    async def feature_persistence_loop() -> None:
+        while not stop_event.is_set() or not feature_queue.empty():
+            try:
+                snapshot = await asyncio.wait_for(feature_queue.get(), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
+            try:
+                await asyncio.to_thread(supabase.insert_feature_snapshot, session_id, snapshot)
+            except Exception:
+                log.exception("failed to persist live feature snapshot")
+            finally:
+                feature_queue.task_done()
+
     async def health_loop() -> None:
-        while True:
+        while not stop_event.is_set():
             try:
                 last_update_id = collector.book.last_update_id if collector.book else None
                 buffered = collector.buffer.snapshot()
@@ -82,17 +131,34 @@ async def main() -> None:
                 raise
             except Exception:
                 log.exception("failed to write collector health")
-            await asyncio.sleep(30)
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=30.0)
+            except asyncio.TimeoutError:
+                pass
 
+    feature_task = asyncio.create_task(feature_persistence_loop())
     health_task = asyncio.create_task(health_loop())
     log.info("starting BTCUSDT L2 collector for %s", settings.symbol)
     try:
-        await collector.run(on_update=on_update)
+        await collector.run(on_update=on_update, on_raw=on_raw)
     finally:
+        stop_event.set()
+        collector.stop()
         health_task.cancel()
         await asyncio.gather(health_task, return_exceptions=True)
-        collector.stop()
+        await feature_queue.join()
+        feature_task.cancel()
+        await asyncio.gather(feature_task, return_exceptions=True)
+        try:
+            supabase.stop_session(session_id)
+        except Exception:
+            log.exception("failed to mark research session stopped")
         supabase.close()
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            try:
+                loop.remove_signal_handler(sig)
+            except (NotImplementedError, RuntimeError):
+                pass
 
 
 if __name__ == "__main__":
