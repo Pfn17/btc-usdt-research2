@@ -149,7 +149,15 @@ class SupabaseResearchClient:
             "mode": mode,
             "status": "running",
             "started_at": datetime.now(timezone.utc).isoformat(),
+            "last_heartbeat_at": datetime.now(timezone.utc).isoformat(),
         })
+
+    def heartbeat_session(self, session_id: str) -> list[dict[str, Any]]:
+        return self.update(
+            "research_sessions",
+            f"id=eq.{session_id}",
+            {"last_heartbeat_at": datetime.now(timezone.utc).isoformat()},
+        )
 
     def stop_session(self, session_id: str) -> list[dict[str, Any]]:
         return self.update(
