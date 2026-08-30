@@ -14,26 +14,15 @@ from btc_research.l2.collector import L2Collector
 from btc_research.marketdata.binance import BinanceFuturesMarketData
 from btc_research.research.supabase import SupabaseResearchClient
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s %(message)s",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("btc_research.worker")
 
 
 async def main() -> None:
     settings = Settings()
-    market_data = BinanceFuturesMarketData(
-        settings.futures_api_url,
-        symbol=settings.symbol,
-    )
+    market_data = BinanceFuturesMarketData(settings.futures_api_url, symbol=settings.symbol)
     archive = ArchiveWriter(settings.archive_dir)
-    collector = L2Collector(
-        market_data=market_data,
-        websocket_url=settings.websocket_url,
-        symbol=settings.symbol,
-        buffer_size=10_000,
-    )
+    collector = L2Collector(market_data=market_data, websocket_url=settings.websocket_url, symbol=settings.symbol, buffer_size=10_000)
     features = FeatureEngine(depth_levels=10, window_ms=1_000)
 
     supabase_url = os.environ.get("SUPABASE_URL", "")
@@ -42,7 +31,18 @@ async def main() -> None:
         raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for the collector")
 
     supabase = SupabaseResearchClient(supabase_url, supabase_key)
-    session_rows = supabase.insert_session(settings.symbol)
+    owner_id = "railway-worker"
+    # Railway can terminate an old container before its finally block completes.
+    # Self-heal orphaned sessions before creating a new one, using heartbeat age
+    # rather than assuming a shutdown callback will always run.
+    try:
+        recovered = supabase.stop_stale_sessions(owner_id=owner_id, stale_after_seconds=120)
+        if recovered:
+            log.warning("marked %d stale research session(s) stopped", recovered)
+    except Exception:
+        log.exception("failed to recover stale research sessions")
+
+    session_rows = supabase.insert_session(settings.symbol, owner_id=owner_id)
     if not session_rows or "id" not in session_rows[0]:
         supabase.close()
         raise RuntimeError("Supabase did not return a research session id")
@@ -62,16 +62,12 @@ async def main() -> None:
         try:
             loop.add_signal_handler(sig, request_stop)
         except (NotImplementedError, RuntimeError):
-            # Windows/test environments may not support asyncio signal handlers.
             pass
 
     def on_raw(update) -> None:
-        # Archive every real exchange event, regardless of later validity.
         archive.append(update)
 
     def on_update(update) -> None:
-        # Collector invokes this only after the synchronized local book accepts
-        # the event, so invalid/contaminated events cannot create features.
         try:
             snapshot = features.compute(collector.book, update)
         except Exception:
@@ -80,8 +76,6 @@ async def main() -> None:
         try:
             feature_queue.put_nowait(snapshot)
         except asyncio.QueueFull:
-            # Never block the market-data hot path. Dropping a persistence item
-            # is observable and does not fabricate a feature or signal.
             log.error("feature persistence queue full; feature snapshot not persisted")
 
     async def feature_persistence_loop() -> None:
@@ -100,6 +94,9 @@ async def main() -> None:
     async def health_loop() -> None:
         while not stop_event.is_set():
             try:
+                # Heartbeat is the authoritative liveness signal used by the
+                # startup self-heal path. Keep it independent from market data.
+                supabase.heartbeat_session(session_id)
                 last_update_id = collector.book.last_update_id if collector.book else None
                 buffered = collector.buffer.snapshot()
                 last_event_ms = buffered[-1].event_time_ms if buffered else None
@@ -130,7 +127,7 @@ async def main() -> None:
             except asyncio.CancelledError:
                 raise
             except Exception:
-                log.exception("failed to write collector health")
+                log.exception("failed to write collector health/heartbeat")
             try:
                 await asyncio.wait_for(stop_event.wait(), timeout=30.0)
             except asyncio.TimeoutError:
