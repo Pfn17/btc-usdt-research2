@@ -14,7 +14,40 @@ class SupabaseResearchClient:
     Required environment variables:
       SUPABASE_URL
       SUPABASE_SERVICE_ROLE_KEY (server-side only; never expose to frontend)
+
+    The payload contracts below mirror the current production research schema.
+    They are deliberately checked before POST so application/schema drift fails
+    locally and explicitly instead of becoming repeated PostgREST 400 errors.
     """
+
+    _TABLE_CONTRACTS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
+        "feature_snapshots": (
+            frozenset({
+                "session_id", "symbol", "event_time_ms", "receive_time_ns", "book_update_id",
+                "mid_price", "spread", "spread_bps", "microprice", "imbalance_1", "imbalance_n",
+                "bid_depth_n", "ask_depth_n", "order_flow_1s", "volatility_1s", "book_pressure",
+                "compute_time_ns",
+            }),
+            frozenset({
+                "session_id", "symbol", "event_time_ms", "receive_time_ns", "book_update_id",
+                "mid_price", "spread", "spread_bps", "microprice", "imbalance_1", "imbalance_n",
+                "bid_depth_n", "ask_depth_n", "order_flow_1s", "volatility_1s", "book_pressure",
+            }),
+        ),
+        "paper_signals": (
+            frozenset({
+                "session_id", "event_time_ms", "direction", "confidence", "expected_move",
+                "horizon_seconds", "data_quality", "risk_status", "rationale",
+            }),
+            frozenset({
+                "session_id", "event_time_ms", "direction", "data_quality", "risk_status",
+            }),
+        ),
+        "contamination_intervals": (
+            frozenset({"session_id", "started_at", "ended_at", "reason"}),
+            frozenset({"session_id", "started_at", "reason"}),
+        ),
+    }
 
     def __init__(self, url: str | None = None, service_role_key: str | None = None, timeout: float = 10.0) -> None:
         self.url = (url or os.environ.get("SUPABASE_URL", "")).rstrip("/")
@@ -46,7 +79,23 @@ class SupabaseResearchClient:
             return asdict(value)
         return value
 
+    @classmethod
+    def _validate_payload(cls, table: str, payload: dict[str, Any]) -> None:
+        contract = cls._TABLE_CONTRACTS.get(table)
+        if contract is None:
+            return
+        allowed, required = contract
+        unknown = set(payload) - allowed
+        missing = required - set(payload)
+        if unknown:
+            raise ValueError(f"{table} payload has unknown columns: {sorted(unknown)}")
+        if missing:
+            raise ValueError(f"{table} payload is missing required columns: {sorted(missing)}")
+
     def insert(self, table: str, rows: dict[str, Any] | list[dict[str, Any]]) -> list[dict[str, Any]]:
+        payloads = rows if isinstance(rows, list) else [rows]
+        for payload in payloads:
+            self._validate_payload(table, payload)
         response = self._client.post(f"/{table}", json=rows, headers={"Prefer": "return=representation"})
         response.raise_for_status()
         return response.json()
