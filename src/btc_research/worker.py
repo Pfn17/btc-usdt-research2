@@ -32,9 +32,6 @@ async def main() -> None:
 
     supabase = SupabaseResearchClient(supabase_url, supabase_key)
     owner_id = "railway-worker"
-    # Railway can terminate an old container before its finally block completes.
-    # Self-heal orphaned sessions before creating a new one, using heartbeat age
-    # rather than assuming a shutdown callback will always run.
     try:
         recovered = supabase.stop_stale_sessions(owner_id=owner_id, stale_after_seconds=120)
         if recovered:
@@ -65,9 +62,20 @@ async def main() -> None:
             pass
 
     def on_raw(update) -> None:
-        archive.append(update)
+        try:
+            archive.append(update)
+        except OSError as exc:
+            # Raw archive is a research source of truth. Continuing after an
+            # ENOSPC/I/O failure would make the live stream appear healthy while
+            # silently losing the immutable raw record. Fail closed instead of
+            # entering a reconnect loop that can hammer the exchange.
+            log.critical("raw archive unavailable; stopping collector: %s", exc)
+            request_stop()
+            raise
 
     def on_update(update) -> None:
+        if stop_event.is_set():
+            return
         try:
             snapshot = features.compute(collector.book, update)
         except Exception:
@@ -94,8 +102,6 @@ async def main() -> None:
     async def health_loop() -> None:
         while not stop_event.is_set():
             try:
-                # Heartbeat is the authoritative liveness signal used by the
-                # startup self-heal path. Keep it independent from market data.
                 supabase.heartbeat_session(session_id)
                 last_update_id = collector.book.last_update_id if collector.book else None
                 buffered = collector.buffer.snapshot()
