@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -41,9 +43,11 @@ class ArchiveRecord:
 class ArchiveWriter:
     """Append-only raw event archive with deterministic metadata and daily rotation."""
 
-    def __init__(self, root: str | Path = "./data/raw") -> None:
+    def __init__(self, root: str | Path = "./data/raw", min_free_mb: int | None = None) -> None:
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
+        configured = os.environ.get("BTC_ARCHIVE_MIN_FREE_MB", "512")
+        self.min_free_bytes = (min_free_mb if min_free_mb is not None else int(configured)) * 1024 * 1024
 
     def path_for(self, symbol: str, event_time_ms: int) -> Path:
         dt = datetime.fromtimestamp(event_time_ms / 1000, tz=timezone.utc)
@@ -52,8 +56,15 @@ class ArchiveWriter:
         return directory / "depth.jsonl"
 
     def append(self, update: DepthUpdate) -> Path:
+        usage = shutil.disk_usage(self.root)
+        if usage.free < self.min_free_bytes:
+            raise OSError(
+                f"raw archive storage below safety margin: free={usage.free} bytes, "
+                f"required={self.min_free_bytes} bytes"
+            )
         path = self.path_for(update.symbol, update.event_time_ms)
+        record = ArchiveRecord.from_update(update).to_jsonl()
         with path.open("ab") as fh:
-            fh.write(ArchiveRecord.from_update(update).to_jsonl())
+            fh.write(record)
             fh.flush()
         return path
