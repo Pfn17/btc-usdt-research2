@@ -57,10 +57,6 @@ class L2Collector:
         try:
             for attempt in range(1, 21):
                 last_id, bids, asks = await self.market_data.snapshot()
-
-                # A REST snapshot can be newer than the events received so far.
-                # Wait briefly for the WebSocket observation window to advance
-                # before declaring the snapshot un-alignable.
                 buffered = self.buffer.snapshot()
                 target = last_id + 1
                 latest_u = buffered[-1].final_update_id if buffered else None
@@ -81,7 +77,6 @@ class L2Collector:
                     await asyncio.sleep(0.1)
                     continue
 
-                # Detach only after the observation window has been validated.
                 self.buffer.swap()
                 self.book = result.book
                 self.events_applied += result.applied_events
@@ -99,15 +94,22 @@ class L2Collector:
         finally:
             self._bootstrapping = False
 
-    async def _consume(self, ws: ClientConnection, on_update: Callable[[DepthUpdate], None] | None) -> None:
+    async def _consume(
+        self,
+        ws: ClientConnection,
+        on_update: Callable[[DepthUpdate], None] | None,
+        on_raw: Callable[[DepthUpdate], None] | None,
+    ) -> None:
         async for message in ws:
             if self._stop.is_set():
                 return
             event = self.market_data.decode_depth_message(message)
             self.events_received += 1
             self.buffer.append(event)
-            if on_update:
-                on_update(event)
+            # Raw archive sees every real exchange event, including events that
+            # later fail sequence/order-book validation.
+            if on_raw:
+                on_raw(event)
 
             if self.book is None or self._bootstrapping:
                 continue
@@ -116,19 +118,27 @@ class L2Collector:
                 self.book.apply(event)
                 if self.book.last_update_id != before:
                     self.events_applied += 1
+                    # Feature/signal consumers only see an event after it has
+                    # been successfully applied to a synchronized local book.
+                    if on_update:
+                        on_update(event)
             except ValueError:
                 self.sequence_errors += 1
                 self.contaminated = True
                 await self.bootstrap()
 
-    async def run(self, on_update: Callable[[DepthUpdate], None] | None = None) -> None:
+    async def run(
+        self,
+        on_update: Callable[[DepthUpdate], None] | None = None,
+        on_raw: Callable[[DepthUpdate], None] | None = None,
+    ) -> None:
         delay = self.reconnect_min_s
         while not self._stop.is_set():
             try:
                 async with connect(self.stream_url, ping_interval=15, ping_timeout=10, close_timeout=5, max_queue=2048) as ws:
                     log.info("connected to %s", self.stream_url)
                     delay = self.reconnect_min_s
-                    consumer = asyncio.create_task(self._consume(ws, on_update))
+                    consumer = asyncio.create_task(self._consume(ws, on_update, on_raw))
                     try:
                         await asyncio.sleep(0)
                         await self.bootstrap()
