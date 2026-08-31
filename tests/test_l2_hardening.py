@@ -1,4 +1,5 @@
 import asyncio
+from unittest.mock import patch
 
 from btc_research.l2 import EventBuffer, L2Collector, OrderBookSynchronizer
 from btc_research.marketdata.types import DepthUpdate, PriceLevel
@@ -83,5 +84,43 @@ def test_collector_keeps_events_arriving_during_snapshot() -> None:
         assert book.last_update_id == 102
         assert len(collector.buffer) == 0
         assert collector.contaminated is False
+
+    asyncio.run(run())
+
+
+def test_alignment_retry_uses_bounded_exponential_backoff() -> None:
+    class Adapter:
+        async def snapshot(self):
+            return 100, [PriceLevel("100", "1")], [PriceLevel("101", "1")]
+
+    class FlakySynchronizer:
+        def __init__(self):
+            self.calls = 0
+
+        def sync_snapshot(self, last_id, bids, asks, buffered):
+            self.calls += 1
+            if self.calls < 3:
+                raise RuntimeError("snapshot behind buffered stream")
+            book = __import__("btc_research.orderbook.book", fromlist=["OrderBook"]).OrderBook.from_snapshot(last_id, bids, asks)
+            return type("Result", (), {"book": book, "applied_events": 0, "skipped_events": 0})()
+
+    async def run() -> None:
+        collector = L2Collector(Adapter(), "wss://example.test/ws")
+        collector.syncer = FlakySynchronizer()
+        waits: list[float] = []
+
+        async def fake_wait_for(awaitable, timeout):
+            waits.append(timeout)
+            awaitable.close()
+            raise asyncio.TimeoutError
+
+        with patch("btc_research.l2.collector.asyncio.wait_for", side_effect=fake_wait_for):
+            book = await collector.bootstrap()
+
+        assert book.last_update_id == 100
+        assert len(waits) == 2
+        assert waits[0] >= 0.25
+        assert waits[1] >= 0.50
+        assert waits[1] > waits[0]
 
     asyncio.run(run())
