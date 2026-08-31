@@ -5,16 +5,18 @@ import os
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import httpx
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import FileResponse, ORJSONResponse
 from pydantic import BaseModel, ConfigDict
 
 
 STALE_AFTER_MS = int(os.environ.get("BTC_API_STALE_AFTER_MS", "2000"))
 WS_POLL_SECONDS = float(os.environ.get("BTC_API_WS_POLL_SECONDS", "1.0"))
+DASHBOARD_PATH = Path(__file__).resolve().parents[2] / "dashboard" / "index.html"
 
 
 class APIConfig(BaseModel):
@@ -114,6 +116,13 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
 )
+
+
+@app.get("/", response_class=FileResponse, include_in_schema=False)
+async def dashboard() -> FileResponse:
+    if not DASHBOARD_PATH.is_file():
+        raise HTTPException(status_code=404, detail="dashboard unavailable")
+    return FileResponse(DASHBOARD_PATH, media_type="text/html")
 
 
 @app.get("/health")
