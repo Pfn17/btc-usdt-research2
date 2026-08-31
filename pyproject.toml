@@ -25,3 +25,6 @@ testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.vercel]
+entrypoint = "api:app"
