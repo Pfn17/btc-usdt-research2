@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Iterator
@@ -8,7 +9,7 @@ from .writer import ArchiveRecord
 
 
 class ArchiveReader:
-    """Deterministic reader for append-only archive files."""
+    """Deterministic reader for raw archive files and rotated chunks."""
 
     def __init__(self, root: str | Path = "./data/raw") -> None:
         self.root = Path(root)
@@ -17,7 +18,7 @@ class ArchiveReader:
         base = self.root / symbol.upper()
         if not base.exists():
             return []
-        paths = sorted(base.glob("*/depth.jsonl"))
+        paths = sorted(base.glob("*/depth*.jsonl"))
         if start_date:
             paths = [p for p in paths if p.parent.name >= start_date]
         if end_date:
@@ -32,7 +33,7 @@ class ArchiveReader:
                         continue
                     obj = json.loads(line)
                     raw = bytes.fromhex(obj["raw_event_hex"])
-                    if obj["raw_sha256"] != __import__("hashlib").sha256(raw).hexdigest():
+                    if obj["raw_sha256"] != hashlib.sha256(raw).hexdigest():
                         raise ValueError(f"archive checksum mismatch: {path}")
                     yield ArchiveRecord(
                         symbol=obj["symbol"], event_time_ms=int(obj["event_time_ms"]),
