@@ -125,6 +125,18 @@ class SupabaseResearchClient:
             raise TypeError("feature snapshot must be a dataclass or dict")
         return self.insert("feature_snapshots", {"session_id": session_id, **payload})
 
+    def insert_feature_snapshots(self, session_id: str, snapshots: list[Any]) -> list[dict[str, Any]]:
+        """Persist a micro-batch in one PostgREST request, preserving input order."""
+        if not snapshots:
+            return []
+        rows: list[dict[str, Any]] = []
+        for snapshot in snapshots:
+            payload = self._payload(snapshot)
+            if not isinstance(payload, dict):
+                raise TypeError("feature snapshot must be a dataclass or dict")
+            rows.append({"session_id": session_id, **payload})
+        return self.insert("feature_snapshots", rows)
+
     def insert_paper_signal(self, session_id: str, signal: Any) -> list[dict[str, Any]]:
         payload = self._payload(signal)
         if not isinstance(payload, dict):
