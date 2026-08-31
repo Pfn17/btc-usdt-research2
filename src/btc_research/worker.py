@@ -47,6 +47,8 @@ async def main() -> None:
 
     stop_event = asyncio.Event()
     feature_queue: asyncio.Queue = asyncio.Queue(maxsize=20_000)
+    batch_size = 20
+    batch_wait_seconds = 0.25
 
     def request_stop() -> None:
         if not stop_event.is_set():
@@ -82,25 +84,46 @@ async def main() -> None:
         except asyncio.QueueFull:
             log.error("feature persistence queue full; feature snapshot not persisted")
 
+    async def get_feature_batch() -> list:
+        batch = [await feature_queue.get()]
+        deadline = asyncio.get_running_loop().time() + batch_wait_seconds
+        while len(batch) < batch_size:
+            remaining = deadline - asyncio.get_running_loop().time()
+            if remaining <= 0:
+                break
+            try:
+                batch.append(await asyncio.wait_for(feature_queue.get(), timeout=remaining))
+            except asyncio.TimeoutError:
+                break
+        return batch
+
     async def feature_persistence_loop() -> None:
         failure_backoff = 1.0
         while not stop_event.is_set() or not feature_queue.empty():
             try:
-                snapshot = await asyncio.wait_for(feature_queue.get(), timeout=1.0)
+                batch = await asyncio.wait_for(get_feature_batch(), timeout=1.0)
             except asyncio.TimeoutError:
                 continue
             try:
-                await asyncio.to_thread(supabase.insert_feature_snapshot, session_id, snapshot)
+                await asyncio.to_thread(supabase.insert_feature_snapshots, session_id, batch)
                 failure_backoff = 1.0
             except Exception:
-                log.exception("failed to persist live feature snapshot; backing off %.1fs", failure_backoff)
+                log.exception("failed to persist live feature batch (%d snapshots); backing off %.1fs", len(batch), failure_backoff)
+                # Put the batch back in FIFO order so transient DB failures do not silently lose snapshots.
+                for snapshot in reversed(batch):
+                    try:
+                        feature_queue.put_nowait(snapshot)
+                    except asyncio.QueueFull:
+                        log.critical("feature queue full while requeueing failed batch; snapshot loss possible")
+                        break
                 try:
                     await asyncio.wait_for(stop_event.wait(), timeout=failure_backoff)
                 except asyncio.TimeoutError:
                     pass
                 failure_backoff = min(failure_backoff * 2.0, 30.0)
             finally:
-                feature_queue.task_done()
+                for _ in batch:
+                    feature_queue.task_done()
 
     async def health_loop() -> None:
         while not stop_event.is_set():
