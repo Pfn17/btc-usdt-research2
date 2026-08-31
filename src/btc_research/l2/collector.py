@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
 from collections.abc import Callable
 
 import httpx
@@ -65,7 +66,9 @@ class L2Collector:
     async def bootstrap(self) -> OrderBook:
         """Build a synchronized book while preserving the live FIFO buffer."""
         self._bootstrapping = True
-        delay = self.reconnect_min_s
+        http_delay = self.reconnect_min_s
+        alignment_delay = 0.25
+        alignment_max_s = 5.0
         try:
             for attempt in range(1, 21):
                 try:
@@ -73,7 +76,7 @@ class L2Collector:
                 except httpx.HTTPStatusError as exc:
                     retry_after = self._retry_after_seconds(exc)
                     if exc.response.status_code in (418, 429):
-                        wait_s = retry_after if retry_after is not None else min(delay, self.reconnect_max_s)
+                        wait_s = retry_after if retry_after is not None else min(http_delay, self.reconnect_max_s)
                         log.error("Binance snapshot returned HTTP %d; backing off %.1fs", exc.response.status_code, wait_s)
                         if attempt == 20:
                             raise
@@ -81,7 +84,7 @@ class L2Collector:
                             await asyncio.wait_for(self._stop.wait(), timeout=wait_s)
                         except asyncio.TimeoutError:
                             pass
-                        delay = min(max(delay * 2, self.reconnect_min_s), self.reconnect_max_s)
+                        http_delay = min(max(http_delay * 2, self.reconnect_min_s), self.reconnect_max_s)
                         continue
                     raise
 
@@ -96,13 +99,20 @@ class L2Collector:
                     result = self.syncer.sync_snapshot(last_id, bids, asks, buffered)
                 except RuntimeError as exc:
                     log.warning(
-                        "snapshot synchronization unavailable (attempt %d/20): %s; waiting for stream alignment",
+                        "snapshot synchronization unavailable (attempt %d/20): %s; backing off %.2fs",
                         attempt,
                         exc,
+                        alignment_delay,
                     )
                     if attempt == 20:
                         raise
-                    await asyncio.sleep(0.1)
+                    jitter = random.uniform(0.0, min(0.25, alignment_delay * 0.25))
+                    wait_s = min(alignment_delay + jitter, alignment_max_s)
+                    try:
+                        await asyncio.wait_for(self._stop.wait(), timeout=wait_s)
+                    except asyncio.TimeoutError:
+                        pass
+                    alignment_delay = min(alignment_delay * 2.0, alignment_max_s)
                     continue
 
                 self.buffer.swap()
