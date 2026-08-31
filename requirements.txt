@@ -3,3 +3,5 @@ websockets>=14,<16
 pydantic>=2.7,<3
 pydantic-settings>=2.2,<3
 orjson>=3.10,<4
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
