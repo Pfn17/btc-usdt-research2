@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, ORJSONResponse
 from pydantic import BaseModel, ConfigDict
 
@@ -29,7 +29,6 @@ class APIConfig(BaseModel):
 
 def load_config() -> APIConfig:
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
-    # The API must never receive the collector's service-role credential.
     key = os.environ.get("SUPABASE_ANON_KEY", "") or os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")
     if not url or not key:
         raise RuntimeError("SUPABASE_URL and SUPABASE_ANON_KEY (or SUPABASE_PUBLISHABLE_KEY) are required")
@@ -41,7 +40,7 @@ class SupabaseReadClient:
         self.config = config
         self.client = httpx.AsyncClient(
             base_url=f"{config.url}/rest/v1",
-            timeout=httpx.Timeout(5.0, connect=2.0),
+            timeout=httpx.Timeout(15.0, connect=3.0),
             headers={"apikey": config.key, "Authorization": f"Bearer {config.key}"},
         )
 
@@ -56,6 +55,14 @@ class SupabaseReadClient:
             raise RuntimeError(f"unexpected {table} response")
         return payload
 
+    async def rpc(self, function: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
+        response = await self.client.post(f"/rpc/{function}", json=payload)
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, list):
+            raise RuntimeError(f"unexpected {function} response")
+        return data
+
 
 class LiveAPI:
     def __init__(self, db: SupabaseReadClient) -> None:
@@ -69,10 +76,7 @@ class LiveAPI:
         return rows[0] if rows else None
 
     async def latest_health(self) -> dict[str, Any] | None:
-        rows = await self.db.select(
-            "collector_health",
-            "select=*&order=updated_at.desc&limit=1",
-        )
+        rows = await self.db.select("collector_health", "select=*&order=updated_at.desc&limit=1")
         return rows[0] if rows else None
 
     async def current_session(self) -> dict[str, Any] | None:
@@ -81,6 +85,24 @@ class LiveAPI:
             "select=id,symbol,mode,status,started_at,last_heartbeat_at,stopped_at&status=eq.running&order=last_heartbeat_at.desc&limit=1",
         )
         return rows[0] if rows else None
+
+    async def research_counts(self) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for table in ("research_labels", "evaluations", "research_results", "research_hypotheses", "paper_signals"):
+            rows = await self.db.select(table, "select=id&limit=1",)
+            # PostgREST Content-Range is not guaranteed here; use a count query with Prefer header is unavailable.
+            counts[table] = len(rows)
+        return counts
+
+    async def edge_scan(self, horizon_seconds: int, fee_bps: float | None, sample_limit: int) -> list[dict[str, Any]]:
+        return await self.db.rpc(
+            "research_edge_scan",
+            {
+                "horizon_seconds": horizon_seconds,
+                "fee_bps": fee_bps,
+                "sample_limit": sample_limit,
+            },
+        )
 
 
 def freshness(row: dict[str, Any] | None) -> dict[str, Any]:
@@ -112,7 +134,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="BTCUSDT Research API",
-    version="0.1.0",
+    version="0.2.0",
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
 )
@@ -172,6 +194,36 @@ async def session_current() -> dict[str, Any]:
     if row is None:
         raise HTTPException(status_code=503, detail="no running research session")
     return {"data": row, "freshness": freshness(row)}
+
+
+@app.get("/api/v1/research/edge-scan")
+async def research_edge_scan(
+    horizon_seconds: int = Query(60, ge=60, le=300),
+    fee_bps: float | None = Query(None, ge=0, le=100),
+    sample_limit: int = Query(50000, ge=5000, le=200000),
+) -> dict[str, Any]:
+    if horizon_seconds not in (60, 120, 180, 300):
+        raise HTTPException(status_code=400, detail="horizon_seconds must be one of 60, 120, 180, 300")
+    try:
+        rows = await app.state.live.edge_scan(horizon_seconds, fee_bps, sample_limit)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="edge scan unavailable") from exc
+    return {
+        "data": rows,
+        "method": {
+            "forward_return": "10000 * (future_mid - entry_mid) / entry_mid in bps",
+            "buckets": 5,
+            "future_match": "first valid snapshot at/after horizon within 3 seconds",
+            "net_ev_proxy": "gross forward return - observed spread_bps - configured round-trip fee_bps",
+            "impact": "not included: stored feature snapshots do not contain full executable L2 levels",
+            "status": "exploratory_screen_only",
+        },
+        "parameters": {
+            "horizon_seconds": horizon_seconds,
+            "fee_bps": fee_bps,
+            "sample_limit": sample_limit,
+        },
+    }
 
 
 @app.websocket("/ws/features")
