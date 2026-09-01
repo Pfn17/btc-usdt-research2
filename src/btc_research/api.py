@@ -89,18 +89,24 @@ class LiveAPI:
     async def research_counts(self) -> dict[str, int]:
         counts: dict[str, int] = {}
         for table in ("research_labels", "evaluations", "research_results", "research_hypotheses", "paper_signals"):
-            rows = await self.db.select(table, "select=id&limit=1",)
-            # PostgREST Content-Range is not guaranteed here; use a count query with Prefer header is unavailable.
+            rows = await self.db.select(table, "select=id&limit=1")
             counts[table] = len(rows)
         return counts
 
-    async def edge_scan(self, horizon_seconds: int, fee_bps: float | None, sample_limit: int) -> list[dict[str, Any]]:
+    async def edge_scan(
+        self,
+        horizon_seconds: int,
+        fee_bps: float | None,
+        sample_limit: int,
+        as_of_event_time_ms: int | None,
+    ) -> list[dict[str, Any]]:
         return await self.db.rpc(
-            "research_edge_scan",
+            "research_edge_scan_frozen",
             {
                 "horizon_seconds": horizon_seconds,
                 "fee_bps": fee_bps,
                 "sample_limit": sample_limit,
+                "as_of_event_time_ms": as_of_event_time_ms,
             },
         )
 
@@ -134,7 +140,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="BTCUSDT Research API",
-    version="0.2.0",
+    version="0.3.0",
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
 )
@@ -201,20 +207,24 @@ async def research_edge_scan(
     horizon_seconds: int = Query(60, ge=60, le=300),
     fee_bps: float | None = Query(None, ge=0, le=100),
     sample_limit: int = Query(50000, ge=5000, le=200000),
+    as_of_event_time_ms: int | None = Query(None, ge=0),
 ) -> dict[str, Any]:
     if horizon_seconds not in (60, 120, 180, 300):
         raise HTTPException(status_code=400, detail="horizon_seconds must be one of 60, 120, 180, 300")
     try:
-        rows = await app.state.live.edge_scan(horizon_seconds, fee_bps, sample_limit)
+        rows = await app.state.live.edge_scan(horizon_seconds, fee_bps, sample_limit, as_of_event_time_ms)
     except Exception as exc:
         raise HTTPException(status_code=503, detail="edge scan unavailable") from exc
+    dataset_end = max((int(r["dataset_end_ms"]) for r in rows if r.get("dataset_end_ms") is not None), default=as_of_event_time_ms)
+    dataset_start = min((int(r["dataset_start_ms"]) for r in rows if r.get("dataset_start_ms") is not None), default=None)
     return {
         "data": rows,
         "method": {
             "forward_return": "10000 * (future_mid - entry_mid) / entry_mid in bps",
             "buckets": 5,
-            "future_match": "first valid snapshot at/after horizon within 3 seconds",
+            "future_match": "first valid same-session snapshot at/after horizon within 3 seconds",
             "net_ev_proxy": "gross forward return - observed spread_bps - configured round-trip fee_bps",
+            "dataset_freeze": "entry observations are capped at as_of_event_time_ms minus horizon and matching tolerance; repeated runs with the same cutoff use the same data window",
             "impact": "not included: stored feature snapshots do not contain full executable L2 levels",
             "status": "exploratory_screen_only",
         },
@@ -222,7 +232,9 @@ async def research_edge_scan(
             "horizon_seconds": horizon_seconds,
             "fee_bps": fee_bps,
             "sample_limit": sample_limit,
+            "as_of_event_time_ms": as_of_event_time_ms,
         },
+        "dataset": {"start_event_time_ms": dataset_start, "end_event_time_ms": dataset_end},
     }
 
 
