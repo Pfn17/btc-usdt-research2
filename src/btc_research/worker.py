@@ -84,22 +84,34 @@ async def main() -> None:
 
     async def feature_persistence_loop() -> None:
         failure_backoff = 1.0
+        batch_size = 100
         while not stop_event.is_set() or not feature_queue.empty():
             try:
-                snapshot = await asyncio.wait_for(feature_queue.get(), timeout=1.0)
+                first = await asyncio.wait_for(feature_queue.get(), timeout=1.0)
             except asyncio.TimeoutError:
                 continue
-            try:
-                await asyncio.to_thread(supabase.insert_feature_snapshot, session_id, snapshot)
-                failure_backoff = 1.0
-            except Exception:
-                log.exception("failed to persist live feature snapshot; backing off %.1fs", failure_backoff)
+            batch = [first]
+            while len(batch) < batch_size:
                 try:
-                    await asyncio.wait_for(stop_event.wait(), timeout=failure_backoff)
-                except asyncio.TimeoutError:
-                    pass
-                failure_backoff = min(failure_backoff * 2.0, 30.0)
-            finally:
+                    batch.append(feature_queue.get_nowait())
+                except asyncio.QueueEmpty:
+                    break
+
+            persisted = False
+            while not persisted:
+                try:
+                    await asyncio.to_thread(supabase.insert_feature_snapshots, session_id, batch)
+                    persisted = True
+                    failure_backoff = 1.0
+                except Exception:
+                    log.exception("failed to persist feature batch of %d; backing off %.1fs", len(batch), failure_backoff)
+                    try:
+                        await asyncio.wait_for(stop_event.wait(), timeout=failure_backoff)
+                    except asyncio.TimeoutError:
+                        pass
+                    failure_backoff = min(failure_backoff * 2.0, 30.0)
+
+            for _ in batch:
                 feature_queue.task_done()
 
     async def health_loop() -> None:
