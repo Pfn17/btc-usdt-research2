@@ -13,7 +13,7 @@
   </style>
 </head>
 <body>
-<header><div class="top"><div><div class="title">BTCUSDT Research Dashboard</div><div class="sub">Live L2 features + quantitative edge screening · research only · trading disabled</div></div><div style="display:flex;gap:10px;align-items:center"><button class="refresh" id="refresh">Refresh</button><div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Loading</span></div></div></div></header>
+<header><div class="top"><div><div class="title">BTCUSDT Research Dashboard</div><div class="sub">Live L2 features + quantitative edge screening · paper signal only · live trading disabled</div></div><div style="display:flex;gap:10px;align-items:center"><button class="refresh" id="refresh">Refresh</button><div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Loading</span></div></div></div></header>
 <main>
   <div class="grid">
     <section class="card wide"><h2>Market Overview</h2><div class="value" id="mid">—</div><div class="muted">real BTCUSDT feature snapshot</div><div class="row"><span>Spread</span><strong id="spread">—</strong></div><div class="row"><span>Microprice</span><strong id="microprice">—</strong></div></section>
@@ -21,20 +21,22 @@
     <section class="card"><h2>Latency</h2><div class="value" id="latency">—</div><div class="muted">feature compute time</div><div class="row"><span>Feature age</span><strong id="featureAge">—</strong></div></section>
     <section class="card wide"><h2>L2 Depth Features</h2><div id="depthFeatures"></div></section>
     <section class="card wide"><h2>Microstructure Features</h2><div id="features"></div></section>
-    <section class="card"><h2>Validated Signal</h2><div class="value" id="signal">NONE</div><div class="muted" id="signalReason">No paper signal is being presented as a live edge.</div></section>
+    <section class="card"><h2>Paper Signal</h2><div class="value" id="signal">NONE</div><div class="muted" id="signalReason">Waiting for OOS cost gate.</div></section>
     <section class="card"><h2>Research State</h2><div class="value" id="researchState">—</div><div class="muted" id="researchMeta">—</div></section>
   </div>
 
+  <div class="section-title">Purged Walk-Forward Gate</div>
+  <section class="card full">
+    <div class="controls"><label>Horizon <select id="wfoHorizon"><option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select></label><label>Fee / side (bps) <input id="wfoFee" type="number" min="0" max="100" step="0.1" value="4"></label><label>Slippage / side (bps) <input id="wfoSlip" type="number" min="0" max="100" step="0.1" value="0"></label><button class="refresh" id="wfoRun">Run WFO</button></div>
+    <div class="notice" style="margin-top:14px">Baseline rule: train-time 20/80% imbalance quantiles, temporal folds, 60s purge + 60s embargo. Gate requires every OOS fold to have positive cost-adjusted EV with a positive normal 95% lower bound. This is a paper-candidate gate; block bootstrap, FDR and executable L2 impact remain required before live approval.</div>
+    <div class="scroll" style="margin-top:14px"><table class="table"><thead><tr><th>Fold</th><th>N</th><th>Long EV</th><th>Short EV</th><th>Combined Net EV</th><th>Win rate</th><th>95% CI</th></tr></thead><tbody id="wfoRows"><tr><td colspan="7">Loading…</td></tr></tbody></table></div>
+  </section>
+
   <div class="section-title">Exploratory Edge Scanner — real collected data</div>
   <section class="card full">
-    <div class="controls">
-      <label>Horizon <select id="horizon"><option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select></label>
-      <label>Round-trip fee (bps) <input id="fee" type="number" min="0" max="100" step="0.01" value="0"></label>
-      <label>Sample <select id="sample"><option value="20000">20k</option><option value="50000" selected>50k</option><option value="100000">100k</option><option value="200000">200k</option></select></label>
-      <button class="refresh" id="scan">Run scan</button>
-    </div>
-    <div class="notice" style="margin-top:14px">Math: forward mid-price return in bps, five feature quantile buckets, observed spread cost, and configured round-trip fee. This is an exploratory screening layer. It does <b>not</b> include walk-the-book impact, purge/embargo, uniqueness weighting, block bootstrap, FDR, or frozen OOS confirmation, so a positive row is not yet a validated trading edge.</div>
-    <div class="scroll" style="margin-top:14px"><table class="table scan-table"><thead><tr><th>Feature</th><th>Q</th><th>N</th><th>Feature range</th><th>Gross EV bps</th><th>Spread bps</th><th>Net EV proxy bps</th><th>Win rate</th></tr></thead><tbody id="scanRows"><tr><td colspan="8" class="tiny">Run scan against the live database.</td></tr></tbody></table></div>
+    <div class="controls"><label>Horizon <select id="horizon"><option value="60">1 min</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option></select></label><label>Round-trip fee (bps) <input id="fee" type="number" min="0" max="100" step="0.01" value="0"></label><label>Sample <select id="sample"><option value="20000">20k</option><option value="50000" selected>50k</option><option value="100000">100k</option><option value="200000">200k</option></select></label><button class="refresh" id="scan">Run scan</button></div>
+    <div class="notice" style="margin-top:14px">Math: forward mid-price return in bps, five feature quantile buckets, observed spread cost, and configured round-trip fee. Exploratory only: no walk-the-book impact, uniqueness weighting, block bootstrap, FDR, or frozen OOS acceptance.</div>
+    <div class="scroll" style="margin-top:14px"><table class="table scan-table"><thead><tr><th>Feature</th><th>Q</th><th>N</th><th>Feature range</th><th>Gross EV bps</th><th>Spread bps</th><th>Net EV proxy bps</th><th>Win rate</th></tr></thead><tbody id="scanRows"><tr><td colspan="8">Run scan against the live database.</td></tr></tbody></table></div>
   </section>
 
   <div class="section-title">Runtime</div>
@@ -45,16 +47,19 @@ const $=id=>document.getElementById(id);const fmt=(x,d=4)=>x===null||x===undefin
 async function get(path){const r=await fetch(path,{cache:'no-store'});if(!r.ok)throw new Error(path+' '+r.status);return r.json()}
 function setDot(kind,text){$('statusDot').className='dot '+kind;$('statusText').textContent=text}
 function renderKV(target,items){$(target).innerHTML=items.map(([k,v])=>`<div class="metric"><div class="row"><span>${k}</span><strong>${fmt(v)}</strong></div></div>`).join('')}
-async function load(){try{const [health,feature,session]=await Promise.all([get('/health'),get('/api/v1/features/latest'),get('/api/v1/session/current')]);const f=feature.data||{};const h=health.collector_session||session.data||{};
+async function load(){try{const [health,feature,session,signal]=await Promise.all([get('/health'),get('/api/v1/features/latest'),get('/api/v1/session/current'),get('/api/v1/signal/current')]);const f=feature.data||{};const h=health.collector_session||session.data||{};
  $('mid').textContent=fmt(f.mid_price,2);$('spread').textContent=fmt(f.spread_bps,4)+' bps';$('microprice').textContent=fmt(f.microprice,2);
  renderKV('depthFeatures',[['Imbalance L1',f.imbalance_1],['Imbalance N',f.imbalance_n],['Bid depth N',f.bid_depth_n],['Ask depth N',f.ask_depth_n],['Book pressure',f.book_pressure]]);
  renderKV('features',[['Order flow 1s',f.order_flow_1s],['Volatility 1s',f.volatility_1s],['Compute time ms',Number(f.compute_time_ns||0)/1e6]]);
  $('integrity').textContent=health.status==='ok'?'VALID':'DEGRADED';$('integrity').className='value '+(health.status==='ok'?'good':'warntext');$('integrityAge').textContent=feature.freshness?.age_ms==null?'—':fmt(feature.freshness.age_ms,0)+' ms old';$('session').textContent=h?.status||'—';$('latency').textContent=fmt(Number(f.compute_time_ns||0)/1e6,3)+' ms';$('featureAge').textContent=fmt(feature.freshness?.age_ms,0)+' ms';
- $('runtime').innerHTML=[['Symbol',health.symbol||f.symbol],['Session ID',h?.id],['Mode',h?.mode],['Started',h?.started_at],['Last heartbeat',h?.last_heartbeat_at],['Feature event time',f.event_time_ms],['Book update ID',f.book_update_id]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]??'—'}</td></tr>`).join('');
- $('researchState').textContent='EDGE SCAN READY';$('researchMeta').textContent='Uses stored feature snapshots; no dummy signal';setDot(health.status==='ok'?'ok':'warn',health.status==='ok'?'Live data healthy':'Data degraded');
+ $('signal').textContent=signal.signal||'NONE';$('signalReason').textContent=signal.status==='PAPER_CANDIDATE'?'OOS cost gate passed; paper only.':`OOS cost gate blocked (${signal.cost?.fee_bps_per_side??'—'} bps/side fee).`;
+ $('researchState').textContent=signal.status||'NO_SIGNAL';$('researchMeta').textContent=`imbalance_1 ${fmt(signal.feature?.imbalance_1,4)} · q20 ${fmt(signal.feature?.q20,4)} · q80 ${fmt(signal.feature?.q80,4)}`;
+ $('runtime').innerHTML=[['Symbol',health.symbol||f.symbol],['Session ID',h?.id],['Mode',h?.mode],['Started',h?.started_at],['Last heartbeat',h?.last_heartbeat_at],['Feature event time',f.event_time_ms],['Book update ID',f.book_update_id],['Signal gate',signal.status],['Signal',signal.signal]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]??'—'}</td></tr>`).join('');
+ setDot(health.status==='ok'?'ok':'warn',health.status==='ok'?'Live data healthy':'Data degraded');
  }catch(e){setDot('bad','API unavailable');$('integrity').textContent='OFFLINE';$('integrity').className='value badtext';$('signal').textContent='NONE';$('signalReason').textContent=e.message}}
 function renderScan(payload){const rows=payload.data||[];$('scanRows').innerHTML=rows.map(r=>{const net=Number(r.net_ev_proxy_bps);const cls=net>0?'edge-positive':net<0?'edge-negative':'';return `<tr><td>${r.feature_name}</td><td>${r.bucket}</td><td>${fmt(r.n,0)}</td><td>${fmt(r.feature_low,4)} → ${fmt(r.feature_high,4)}</td><td>${fmt(r.gross_ev_bps,4)}</td><td>${fmt(r.mean_spread_bps,4)}</td><td class="${cls}">${fmt(r.net_ev_proxy_bps,4)}</td><td>${fmt(Number(r.win_rate)*100,2)}%</td></tr>`}).join('')||'<tr><td colspan="8">No observations matched the selected horizon.</td></tr>'}
-async function scan(){const h=$('horizon').value,fee=$('fee').value,s=$('sample').value; $('scanRows').innerHTML='<tr><td colspan="8">Scanning real feature snapshots…</td></tr>';try{const q=new URLSearchParams({horizon_seconds:h,sample_limit:s});if(fee!=='')q.set('fee_bps',fee);const payload=await get('/api/v1/research/edge-scan?'+q);renderScan(payload)}catch(e){$('scanRows').innerHTML=`<tr><td colspan="8" class="badtext">${e.message}</td></tr>`}}
-$('refresh').onclick=load;$('scan').onclick=scan;load();scan();setInterval(load,5000);setInterval(scan,60000);
+async function scan(){const h=$('horizon').value,fee=$('fee').value,s=$('sample').value;$('scanRows').innerHTML='<tr><td colspan="8">Scanning real feature snapshots…</td></tr>';try{const q=new URLSearchParams({horizon_seconds:h,sample_limit:s});if(fee!=='')q.set('fee_bps',fee);const payload=await get('/api/v1/research/edge-scan?'+q);renderScan(payload)}catch(e){$('scanRows').innerHTML=`<tr><td colspan="8" class="badtext">${e.message}</td></tr>`}}
+async function wfo(){const h=$('wfoHorizon').value,fee=$('wfoFee').value,slip=$('wfoSlip').value;$('wfoRows').innerHTML='<tr><td colspan="7">Running temporal OOS WFO on real snapshots…</td></tr>';try{const q=new URLSearchParams({horizon_seconds:h,fee_bps:fee,slippage_bps:slip});const p=await get('/api/v1/research/wfo?'+q);$('wfoRows').innerHTML=(p.folds||[]).map(r=>`<tr><td>${r.fold}</td><td>${fmt(r.combined_n,0)}</td><td>${fmt(r.long_net_ev_bps,3)}</td><td>${fmt(r.short_net_ev_bps,3)}</td><td class="${Number(r.combined_net_ev_bps)>0?'edge-positive':'edge-negative'}">${fmt(r.combined_net_ev_bps,3)}</td><td>${fmt(Number(r.combined_win_rate)*100,2)}%</td><td>${fmt(r.ci95_low,3)} → ${fmt(r.ci95_high,3)}</td></tr>`).join('')||'<tr><td colspan="7">No folds.</td></tr>';if(p.status==='PAPER_CANDIDATE'){$('researchState').textContent='PAPER CANDIDATE';$('researchMeta').textContent='All OOS folds passed the current cost gate.'}else{$('researchState').textContent='NO_SIGNAL';$('researchMeta').textContent=`OOS gate blocked · positive folds ${p.gate?.positive_folds??0}/${p.gate?.folds??0}`}}catch(e){$('wfoRows').innerHTML=`<tr><td colspan="7" class="badtext">${e.message}</td></tr>`}}
+$('refresh').onclick=load;$('scan').onclick=scan;$('wfoRun').onclick=wfo;load();scan();wfo();setInterval(load,5000);setInterval(scan,60000);setInterval(wfo,300000);
 </script>
 </body></html>
