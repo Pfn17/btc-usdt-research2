@@ -110,6 +110,32 @@ class LiveAPI:
             },
         )
 
+    async def wfo_scan(
+        self,
+        as_of_event_time_ms: int,
+        horizon_seconds: int,
+        sample_limit: int,
+        purge_seconds: int,
+        embargo_seconds: int,
+        fee_bps: float,
+        slippage_bps: float,
+    ) -> list[dict[str, Any]]:
+        return await self.db.rpc(
+            "research_wfo_signal_scan",
+            {
+                "p_as_of_event_time_ms": as_of_event_time_ms,
+                "p_horizon_seconds": horizon_seconds,
+                "p_sample_limit": sample_limit,
+                "p_purge_seconds": purge_seconds,
+                "p_embargo_seconds": embargo_seconds,
+                "p_fee_bps": fee_bps,
+                "p_slippage_bps": slippage_bps,
+            },
+        )
+
+    async def live_imbalance_signal(self, sample_limit: int) -> list[dict[str, Any]]:
+        return await self.db.rpc("research_live_imbalance_signal", {"p_sample_limit": sample_limit})
+
 
 def freshness(row: dict[str, Any] | None) -> dict[str, Any]:
     if not row:
@@ -138,12 +164,7 @@ async def lifespan(app: FastAPI):
         await db.close()
 
 
-app = FastAPI(
-    title="BTCUSDT Research API",
-    version="0.3.0",
-    default_response_class=ORJSONResponse,
-    lifespan=lifespan,
-)
+app = FastAPI(title="BTCUSDT Research API", version="0.4.0", default_response_class=ORJSONResponse, lifespan=lifespan)
 
 
 @app.get("/", response_class=FileResponse, include_in_schema=False)
@@ -159,12 +180,7 @@ async def health() -> dict[str, Any]:
         session = await app.state.live.current_session()
         feature = await app.state.live.latest_feature()
         feature_fresh = freshness(feature)
-        return {
-            "status": "ok" if session and feature_fresh["available"] and not feature_fresh["stale"] else "degraded",
-            "symbol": app.state.config.symbol,
-            "collector_session": session,
-            "feature_freshness": feature_fresh,
-        }
+        return {"status": "ok" if session and feature_fresh["available"] and not feature_fresh["stale"] else "degraded", "symbol": app.state.config.symbol, "collector_session": session, "feature_freshness": feature_fresh}
     except Exception as exc:
         raise HTTPException(status_code=503, detail="live data unavailable") from exc
 
@@ -217,25 +233,50 @@ async def research_edge_scan(
         raise HTTPException(status_code=503, detail="edge scan unavailable") from exc
     dataset_end = max((int(r["dataset_end_ms"]) for r in rows if r.get("dataset_end_ms") is not None), default=as_of_event_time_ms)
     dataset_start = min((int(r["dataset_start_ms"]) for r in rows if r.get("dataset_start_ms") is not None), default=None)
-    return {
-        "data": rows,
-        "method": {
-            "forward_return": "10000 * (future_mid - entry_mid) / entry_mid in bps",
-            "buckets": 5,
-            "future_match": "first valid same-session snapshot at/after horizon within 3 seconds",
-            "net_ev_proxy": "gross forward return - observed spread_bps - configured round-trip fee_bps",
-            "dataset_freeze": "entry observations are capped at as_of_event_time_ms minus horizon and matching tolerance; repeated runs with the same cutoff use the same data window",
-            "impact": "not included: stored feature snapshots do not contain full executable L2 levels",
-            "status": "exploratory_screen_only",
-        },
-        "parameters": {
-            "horizon_seconds": horizon_seconds,
-            "fee_bps": fee_bps,
-            "sample_limit": sample_limit,
-            "as_of_event_time_ms": as_of_event_time_ms,
-        },
-        "dataset": {"start_event_time_ms": dataset_start, "end_event_time_ms": dataset_end},
-    }
+    return {"data": rows, "method": {"forward_return": "10000 * (future_mid - entry_mid) / entry_mid in bps", "buckets": 5, "future_match": "first valid same-session snapshot at/after horizon within 3 seconds", "net_ev_proxy": "gross forward return - observed spread_bps - configured round-trip fee_bps", "dataset_freeze": "entry observations are capped at as_of_event_time_ms minus horizon; repeated runs with the same cutoff use the same data window", "impact": "not included: stored feature snapshots do not contain full executable L2 levels", "status": "exploratory_screen_only"}, "parameters": {"horizon_seconds": horizon_seconds, "fee_bps": fee_bps, "sample_limit": sample_limit, "as_of_event_time_ms": as_of_event_time_ms}, "dataset": {"start_event_time_ms": dataset_start, "end_event_time_ms": dataset_end}}
+
+
+@app.get("/api/v1/research/wfo")
+async def research_wfo(
+    horizon_seconds: int = Query(60, ge=60, le=300),
+    sample_limit: int = Query(50000, ge=20000, le=200000),
+    fee_bps: float = Query(4.0, ge=0, le=100),
+    slippage_bps: float = Query(0.0, ge=0, le=100),
+    purge_seconds: int = Query(60, ge=0, le=300),
+    embargo_seconds: int = Query(60, ge=0, le=300),
+) -> dict[str, Any]:
+    if horizon_seconds not in (60, 120, 180, 300):
+        raise HTTPException(status_code=400, detail="horizon_seconds must be one of 60, 120, 180, 300")
+    latest = await app.state.live.latest_feature()
+    if not latest:
+        raise HTTPException(status_code=503, detail="no live feature data")
+    cutoff = int(latest["event_time_ms"])
+    try:
+        folds = await app.state.live.wfo_scan(cutoff, horizon_seconds, sample_limit, purge_seconds, embargo_seconds, fee_bps, slippage_bps)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="WFO scan unavailable") from exc
+    positive_folds = sum(1 for r in folds if float(r.get("combined_net_ev_bps", 0)) > 0 and float(r.get("ci95_low", 0)) > 0)
+    gate = bool(folds) and positive_folds == len(folds) and sum(int(r.get("combined_n", 0)) for r in folds) >= 5000
+    return {"status": "PAPER_CANDIDATE" if gate else "NO_SIGNAL", "gate": {"all_folds_positive_and_ci95": gate, "positive_folds": positive_folds, "folds": len(folds), "min_effective_samples": 5000}, "parameters": {"cutoff_event_time_ms": cutoff, "horizon_seconds": horizon_seconds, "sample_limit": sample_limit, "fee_bps_per_side": fee_bps, "slippage_bps_per_side": slippage_bps, "purge_seconds": purge_seconds, "embargo_seconds": embargo_seconds}, "folds": folds, "limitations": ["baseline imbalance_1 quantile rule only", "no block bootstrap/FDR in this gate yet", "no executable L2 impact model", "paper signal only; live trading remains disabled"]}
+
+
+@app.get("/api/v1/signal/current")
+async def current_signal(
+    fee_bps: float = Query(4.0, ge=0, le=100),
+    slippage_bps: float = Query(0.0, ge=0, le=100),
+) -> dict[str, Any]:
+    try:
+        candidate = (await app.state.live.live_imbalance_signal(50000) or [None])[0]
+        latest = await app.state.live.latest_feature()
+        if not candidate or not latest:
+            return {"signal": "NONE", "reason": "no live feature data"}
+        cutoff = int(latest["event_time_ms"])
+        folds = await app.state.live.wfo_scan(cutoff, 60, 50000, 60, 60, fee_bps, slippage_bps)
+        gate = bool(folds) and all(float(r.get("combined_net_ev_bps", 0)) > 0 and float(r.get("ci95_low", 0)) > 0 for r in folds)
+        direction = candidate["candidate_direction"] if gate else "NONE"
+        return {"signal": direction, "status": "PAPER_CANDIDATE" if direction != "NONE" else "NO_SIGNAL", "feature": {"imbalance_1": candidate["imbalance_1"], "q20": candidate["q20"], "q80": candidate["q80"], "event_time_ms": candidate["event_time_ms"]}, "cost": {"fee_bps_per_side": fee_bps, "slippage_bps_per_side": slippage_bps}, "gate": {"all_oos_folds_positive_ci95": gate, "folds": folds}, "trading_enabled": False}
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="signal engine unavailable") from exc
 
 
 @app.websocket("/ws/features")
