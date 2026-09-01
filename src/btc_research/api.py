@@ -21,7 +21,6 @@ DASHBOARD_PATH = Path(__file__).resolve().parents[2] / "dashboard" / "index.html
 
 class APIConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
-
     url: str
     key: str
     symbol: str = "BTCUSDT"
@@ -38,11 +37,7 @@ def load_config() -> APIConfig:
 class SupabaseReadClient:
     def __init__(self, config: APIConfig) -> None:
         self.config = config
-        self.client = httpx.AsyncClient(
-            base_url=f"{config.url}/rest/v1",
-            timeout=httpx.Timeout(15.0, connect=3.0),
-            headers={"apikey": config.key, "Authorization": f"Bearer {config.key}"},
-        )
+        self.client = httpx.AsyncClient(base_url=f"{config.url}/rest/v1", timeout=httpx.Timeout(15.0, connect=3.0), headers={"apikey": config.key, "Authorization": f"Bearer {config.key}"})
 
     async def close(self) -> None:
         await self.client.aclose()
@@ -69,10 +64,7 @@ class LiveAPI:
         self.db = db
 
     async def latest_feature(self) -> dict[str, Any] | None:
-        rows = await self.db.select(
-            "feature_snapshots",
-            f"select=*&symbol=eq.{self.db.config.symbol}&order=event_time_ms.desc&limit=1",
-        )
+        rows = await self.db.select("feature_snapshots", f"select=*&symbol=eq.{self.db.config.symbol}&order=event_time_ms.desc&limit=1")
         return rows[0] if rows else None
 
     async def latest_health(self) -> dict[str, Any] | None:
@@ -80,10 +72,7 @@ class LiveAPI:
         return rows[0] if rows else None
 
     async def current_session(self) -> dict[str, Any] | None:
-        rows = await self.db.select(
-            "research_sessions",
-            "select=id,symbol,mode,status,started_at,last_heartbeat_at,stopped_at&status=eq.running&order=last_heartbeat_at.desc&limit=1",
-        )
+        rows = await self.db.select("research_sessions", "select=id,symbol,mode,status,started_at,last_heartbeat_at,stopped_at&status=eq.running&order=last_heartbeat_at.desc&limit=1")
         return rows[0] if rows else None
 
     async def research_counts(self) -> dict[str, int]:
@@ -93,45 +82,14 @@ class LiveAPI:
             counts[table] = len(rows)
         return counts
 
-    async def edge_scan(
-        self,
-        horizon_seconds: int,
-        fee_bps: float | None,
-        sample_limit: int,
-        as_of_event_time_ms: int | None,
-    ) -> list[dict[str, Any]]:
-        return await self.db.rpc(
-            "research_edge_scan_frozen",
-            {
-                "horizon_seconds": horizon_seconds,
-                "fee_bps": fee_bps,
-                "sample_limit": sample_limit,
-                "as_of_event_time_ms": as_of_event_time_ms,
-            },
-        )
+    async def edge_scan(self, horizon_seconds: int, fee_bps: float | None, sample_limit: int, as_of_event_time_ms: int | None) -> list[dict[str, Any]]:
+        return await self.db.rpc("research_edge_scan_frozen", {"horizon_seconds": horizon_seconds, "fee_bps": fee_bps, "sample_limit": sample_limit, "as_of_event_time_ms": as_of_event_time_ms})
 
-    async def wfo_scan(
-        self,
-        as_of_event_time_ms: int,
-        horizon_seconds: int,
-        sample_limit: int,
-        purge_seconds: int,
-        embargo_seconds: int,
-        fee_bps: float,
-        slippage_bps: float,
-    ) -> list[dict[str, Any]]:
-        return await self.db.rpc(
-            "research_wfo_signal_scan",
-            {
-                "p_as_of_event_time_ms": as_of_event_time_ms,
-                "p_horizon_seconds": horizon_seconds,
-                "p_sample_limit": sample_limit,
-                "p_purge_seconds": purge_seconds,
-                "p_embargo_seconds": embargo_seconds,
-                "p_fee_bps": fee_bps,
-                "p_slippage_bps": slippage_bps,
-            },
-        )
+    async def wfo_scan(self, as_of_event_time_ms: int, horizon_seconds: int, sample_limit: int, purge_seconds: int, embargo_seconds: int, fee_bps: float, slippage_bps: float) -> list[dict[str, Any]]:
+        return await self.db.rpc("research_wfo_signal_scan", {"p_as_of_event_time_ms": as_of_event_time_ms, "p_horizon_seconds": horizon_seconds, "p_sample_limit": sample_limit, "p_purge_seconds": purge_seconds, "p_embargo_seconds": embargo_seconds, "p_fee_bps": fee_bps, "p_slippage_bps": slippage_bps})
+
+    async def conditional_alpha_scan(self, as_of_event_time_ms: int, horizon_seconds: int, sample_limit: int, purge_seconds: int, embargo_seconds: int, fee_bps: float, slippage_bps: float) -> list[dict[str, Any]]:
+        return await self.db.rpc("research_conditional_alpha_scan", {"p_as_of_event_time_ms": as_of_event_time_ms, "p_horizon_seconds": horizon_seconds, "p_sample_limit": sample_limit, "p_purge_seconds": purge_seconds, "p_embargo_seconds": embargo_seconds, "p_fee_bps": fee_bps, "p_slippage_bps": slippage_bps})
 
     async def live_imbalance_signal(self, sample_limit: int) -> list[dict[str, Any]]:
         return await self.db.rpc("research_live_imbalance_signal", {"p_sample_limit": sample_limit})
@@ -164,7 +122,7 @@ async def lifespan(app: FastAPI):
         await db.close()
 
 
-app = FastAPI(title="BTCUSDT Research API", version="0.4.0", default_response_class=ORJSONResponse, lifespan=lifespan)
+app = FastAPI(title="BTCUSDT Research API", version="0.5.0", default_response_class=ORJSONResponse, lifespan=lifespan)
 
 
 @app.get("/", response_class=FileResponse, include_in_schema=False)
@@ -219,32 +177,18 @@ async def session_current() -> dict[str, Any]:
 
 
 @app.get("/api/v1/research/edge-scan")
-async def research_edge_scan(
-    horizon_seconds: int = Query(60, ge=60, le=300),
-    fee_bps: float | None = Query(None, ge=0, le=100),
-    sample_limit: int = Query(50000, ge=5000, le=200000),
-    as_of_event_time_ms: int | None = Query(None, ge=0),
-) -> dict[str, Any]:
+async def research_edge_scan(horizon_seconds: int = Query(60, ge=60, le=300), fee_bps: float | None = Query(None, ge=0, le=100), sample_limit: int = Query(50000, ge=5000, le=200000), as_of_event_time_ms: int | None = Query(None, ge=0)) -> dict[str, Any]:
     if horizon_seconds not in (60, 120, 180, 300):
         raise HTTPException(status_code=400, detail="horizon_seconds must be one of 60, 120, 180, 300")
     try:
         rows = await app.state.live.edge_scan(horizon_seconds, fee_bps, sample_limit, as_of_event_time_ms)
     except Exception as exc:
         raise HTTPException(status_code=503, detail="edge scan unavailable") from exc
-    dataset_end = max((int(r["dataset_end_ms"]) for r in rows if r.get("dataset_end_ms") is not None), default=as_of_event_time_ms)
-    dataset_start = min((int(r["dataset_start_ms"]) for r in rows if r.get("dataset_start_ms") is not None), default=None)
-    return {"data": rows, "method": {"forward_return": "10000 * (future_mid - entry_mid) / entry_mid in bps", "buckets": 5, "future_match": "first valid same-session snapshot at/after horizon within 3 seconds", "net_ev_proxy": "gross forward return - observed spread_bps - configured round-trip fee_bps", "dataset_freeze": "entry observations are capped at as_of_event_time_ms minus horizon; repeated runs with the same cutoff use the same data window", "impact": "not included: stored feature snapshots do not contain full executable L2 levels", "status": "exploratory_screen_only"}, "parameters": {"horizon_seconds": horizon_seconds, "fee_bps": fee_bps, "sample_limit": sample_limit, "as_of_event_time_ms": as_of_event_time_ms}, "dataset": {"start_event_time_ms": dataset_start, "end_event_time_ms": dataset_end}}
+    return {"data": rows, "method": {"status": "exploratory_screen_only"}, "parameters": {"horizon_seconds": horizon_seconds, "fee_bps": fee_bps, "sample_limit": sample_limit, "as_of_event_time_ms": as_of_event_time_ms}}
 
 
 @app.get("/api/v1/research/wfo")
-async def research_wfo(
-    horizon_seconds: int = Query(60, ge=60, le=300),
-    sample_limit: int = Query(50000, ge=20000, le=200000),
-    fee_bps: float = Query(4.0, ge=0, le=100),
-    slippage_bps: float = Query(0.0, ge=0, le=100),
-    purge_seconds: int = Query(60, ge=0, le=300),
-    embargo_seconds: int = Query(60, ge=0, le=300),
-) -> dict[str, Any]:
+async def research_wfo(horizon_seconds: int = Query(60, ge=60, le=300), sample_limit: int = Query(50000, ge=20000, le=200000), fee_bps: float = Query(4.0, ge=0, le=100), slippage_bps: float = Query(0.0, ge=0, le=100), purge_seconds: int = Query(60, ge=0, le=300), embargo_seconds: int = Query(60, ge=0, le=300)) -> dict[str, Any]:
     if horizon_seconds not in (60, 120, 180, 300):
         raise HTTPException(status_code=400, detail="horizon_seconds must be one of 60, 120, 180, 300")
     latest = await app.state.live.latest_feature()
@@ -260,11 +204,23 @@ async def research_wfo(
     return {"status": "PAPER_CANDIDATE" if gate else "NO_SIGNAL", "gate": {"all_folds_positive_and_ci95": gate, "positive_folds": positive_folds, "folds": len(folds), "min_effective_samples": 5000}, "parameters": {"cutoff_event_time_ms": cutoff, "horizon_seconds": horizon_seconds, "sample_limit": sample_limit, "fee_bps_per_side": fee_bps, "slippage_bps_per_side": slippage_bps, "purge_seconds": purge_seconds, "embargo_seconds": embargo_seconds}, "folds": folds, "limitations": ["baseline imbalance_1 quantile rule only", "no block bootstrap/FDR in this gate yet", "no executable L2 impact model", "paper signal only; live trading remains disabled"]}
 
 
+@app.get("/api/v1/research/conditional-alpha")
+async def research_conditional_alpha(horizon_seconds: int = Query(60, ge=60, le=300), sample_limit: int = Query(50000, ge=20000, le=200000), fee_bps: float = Query(4.0, ge=0, le=100), slippage_bps: float = Query(0.0, ge=0, le=100), purge_seconds: int = Query(60, ge=0, le=300), embargo_seconds: int = Query(60, ge=0, le=300)) -> dict[str, Any]:
+    if horizon_seconds not in (60, 120, 180, 300):
+        raise HTTPException(status_code=400, detail="horizon_seconds must be one of 60, 120, 180, 300")
+    latest = await app.state.live.latest_feature()
+    if not latest:
+        raise HTTPException(status_code=503, detail="no live feature data")
+    cutoff = int(latest["event_time_ms"])
+    try:
+        rows = await app.state.live.conditional_alpha_scan(cutoff, horizon_seconds, sample_limit, purge_seconds, embargo_seconds, fee_bps, slippage_bps)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="conditional alpha scan unavailable") from exc
+    return {"status": "RESEARCH_ONLY", "parameters": {"cutoff_event_time_ms": cutoff, "horizon_seconds": horizon_seconds, "sample_limit": sample_limit, "fee_bps_per_side": fee_bps, "slippage_bps_per_side": slippage_bps, "purge_seconds": purge_seconds, "embargo_seconds": embargo_seconds}, "hypotheses": ["imbalance_1 + microprice deviation agreement + low spread", "imbalance_1 + order-flow agreement + low spread"], "data": rows, "limitations": ["only two preregistered interaction hypotheses", "fill/execution probability is not observed", "no ML", "no walk-the-book simulation", "not a live-trading approval"]}
+
+
 @app.get("/api/v1/signal/current")
-async def current_signal(
-    fee_bps: float = Query(4.0, ge=0, le=100),
-    slippage_bps: float = Query(0.0, ge=0, le=100),
-) -> dict[str, Any]:
+async def current_signal(fee_bps: float = Query(4.0, ge=0, le=100), slippage_bps: float = Query(0.0, ge=0, le=100)) -> dict[str, Any]:
     try:
         candidate = (await app.state.live.live_imbalance_signal(50000) or [None])[0]
         latest = await app.state.live.latest_feature()
