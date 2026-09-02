@@ -13,6 +13,7 @@ from btc_research.features.engine import FeatureEngine
 from btc_research.l2.collector import L2Collector
 from btc_research.marketdata.binance import BinanceFuturesMarketData
 from btc_research.marketdata.ohlcv import BinanceFuturesKlines
+from btc_research.ohlcv.backfill import backfill_ohlcv_1m
 from btc_research.ohlcv.collector import collect_latest_ohlcv
 from btc_research.research.supabase import SupabaseResearchClient
 
@@ -129,6 +130,26 @@ async def main() -> None:
             except asyncio.TimeoutError:
                 pass
 
+    async def optional_ohlcv_backfill_task() -> None:
+        """Run a bounded one-shot backfill alongside the live collector when enabled."""
+        raw_days = os.environ.get("OHLCV_BACKFILL_DAYS", "0").strip()
+        if not raw_days:
+            return
+        days = int(raw_days)
+        if days <= 0:
+            return
+        log.info("starting optional OHLCV historical backfill: days=%d", days)
+        try:
+            total = await backfill_ohlcv_1m(
+                days=days,
+                symbol=settings.symbol,
+                api_url=settings.futures_api_url,
+                batch_size=500,
+            )
+            log.info("OHLCV historical backfill COMPLETE: candles=%d", total)
+        except Exception:
+            log.exception("OHLCV historical backfill FAILED")
+
     async def health_loop() -> None:
         while not stop_event.is_set():
             try:
@@ -173,6 +194,7 @@ async def main() -> None:
 
     feature_task = asyncio.create_task(feature_persistence_loop())
     ohlcv_task = asyncio.create_task(ohlcv_persistence_loop())
+    backfill_task = asyncio.create_task(optional_ohlcv_backfill_task())
     health_task = asyncio.create_task(health_loop())
     log.info("starting BTCUSDT L2 + 1m OHLCV collectors for %s", settings.symbol)
     try:
@@ -183,6 +205,9 @@ async def main() -> None:
         health_task.cancel()
         ohlcv_task.cancel()
         await asyncio.gather(health_task, ohlcv_task, return_exceptions=True)
+        if not backfill_task.done():
+            backfill_task.cancel()
+        await asyncio.gather(backfill_task, return_exceptions=True)
         await feature_queue.join()
         feature_task.cancel()
         await asyncio.gather(feature_task, return_exceptions=True)
