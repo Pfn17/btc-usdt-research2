@@ -12,6 +12,8 @@ from btc_research.config import Settings
 from btc_research.features.engine import FeatureEngine
 from btc_research.l2.collector import L2Collector
 from btc_research.marketdata.binance import BinanceFuturesMarketData
+from btc_research.marketdata.ohlcv import BinanceFuturesKlines
+from btc_research.ohlcv.collector import collect_latest_ohlcv
 from btc_research.research.supabase import SupabaseResearchClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -21,6 +23,7 @@ log = logging.getLogger("btc_research.worker")
 async def main() -> None:
     settings = Settings()
     market_data = BinanceFuturesMarketData(settings.futures_api_url, symbol=settings.symbol)
+    ohlcv_market_data = BinanceFuturesKlines(settings.futures_api_url, symbol=settings.symbol)
     archive = ArchiveWriter(settings.archive_dir)
     collector = L2Collector(market_data=market_data, websocket_url=settings.websocket_url, symbol=settings.symbol, buffer_size=10_000)
     features = FeatureEngine(depth_levels=10, window_ms=1_000)
@@ -96,7 +99,6 @@ async def main() -> None:
                     batch.append(feature_queue.get_nowait())
                 except asyncio.QueueEmpty:
                     break
-
             persisted = False
             while not persisted:
                 try:
@@ -110,9 +112,22 @@ async def main() -> None:
                     except asyncio.TimeoutError:
                         pass
                     failure_backoff = min(failure_backoff * 2.0, 30.0)
-
             for _ in batch:
                 feature_queue.task_done()
+
+    async def ohlcv_persistence_loop() -> None:
+        """Keep a tiny 1m Binance kline feed alive without adding a second service."""
+        while not stop_event.is_set():
+            try:
+                count = await collect_latest_ohlcv(ohlcv_market_data, supabase, settings.symbol)
+                if count:
+                    log.info("persisted %d latest 1m OHLCV candle(s)", count)
+            except Exception:
+                log.exception("failed to persist 1m OHLCV")
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=20.0)
+            except asyncio.TimeoutError:
+                pass
 
     async def health_loop() -> None:
         while not stop_event.is_set():
@@ -157,15 +172,17 @@ async def main() -> None:
                 pass
 
     feature_task = asyncio.create_task(feature_persistence_loop())
+    ohlcv_task = asyncio.create_task(ohlcv_persistence_loop())
     health_task = asyncio.create_task(health_loop())
-    log.info("starting BTCUSDT L2 collector for %s", settings.symbol)
+    log.info("starting BTCUSDT L2 + 1m OHLCV collectors for %s", settings.symbol)
     try:
         await collector.run(on_update=on_update, on_raw=on_raw)
     finally:
         stop_event.set()
         collector.stop()
         health_task.cancel()
-        await asyncio.gather(health_task, return_exceptions=True)
+        ohlcv_task.cancel()
+        await asyncio.gather(health_task, ohlcv_task, return_exceptions=True)
         await feature_queue.join()
         feature_task.cancel()
         await asyncio.gather(feature_task, return_exceptions=True)

@@ -29,6 +29,10 @@ class SupabaseResearchClient:
             frozenset({"session_id", "feed_status", "integrity_status", "events_received", "events_applied", "duplicate_events", "sequence_gaps", "resync_count", "stale_after_ms", "latency_ms", "contamination_active", "updated_at", "last_update_id"}),
             frozenset({"session_id", "feed_status", "integrity_status", "events_received", "events_applied", "duplicate_events", "sequence_gaps", "resync_count", "contamination_active", "updated_at"}),
         ),
+        "ohlcv_1m": (
+            frozenset({"symbol", "interval", "open_time_ms", "close_time_ms", "open", "high", "low", "close", "volume", "quote_volume", "trade_count", "taker_buy_volume", "taker_buy_quote_volume", "collected_at"}),
+            frozenset({"symbol", "interval", "open_time_ms", "close_time_ms", "open", "high", "low", "close", "volume", "quote_volume", "trade_count", "taker_buy_volume", "taker_buy_quote_volume"}),
+        ),
     }
 
     def __init__(self, url: str | None = None, service_role_key: str | None = None, timeout: float = 10.0) -> None:
@@ -86,15 +90,20 @@ class SupabaseResearchClient:
         response.raise_for_status()
         return response.json()
 
+    def select(self, table: str, query: str = "select=*&limit=100") -> list[dict[str, Any]]:
+        response = self._client.get(f"/{table}?{query}")
+        response.raise_for_status()
+        return response.json()
+
     def update(self, table: str, filters: str, values: dict[str, Any]) -> list[dict[str, Any]]:
         response = self._client.patch(f"/{table}?{filters}", json=values, headers={"Prefer": "return=representation"})
         response.raise_for_status()
         return response.json()
 
-    def select(self, table: str, query: str = "select=*&limit=100") -> list[dict[str, Any]]:
-        response = self._client.get(f"/{table}?{query}")
-        response.raise_for_status()
-        return response.json()
+    def upsert_ohlcv_1m(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        if not rows:
+            return []
+        return self.upsert("ohlcv_1m", rows, "symbol,interval,open_time_ms")
 
     def stop_stale_sessions(self, owner_id: str = "railway-worker", stale_after_seconds: int = 120) -> int:
         cutoff = (datetime.now(timezone.utc) - timedelta(seconds=stale_after_seconds)).isoformat()
