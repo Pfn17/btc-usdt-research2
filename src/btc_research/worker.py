@@ -10,8 +10,10 @@ from datetime import datetime, timezone
 from btc_research.archive.writer import ArchiveWriter
 from btc_research.config import Settings
 from btc_research.features.engine import FeatureEngine
+from btc_research.funding_basis.collector import collect_latest_funding_basis
 from btc_research.l2.collector import L2Collector
 from btc_research.marketdata.binance import BinanceFuturesMarketData
+from btc_research.marketdata.funding_basis import BinanceFuturesPremiumIndex
 from btc_research.marketdata.ohlcv import BinanceFuturesKlines
 from btc_research.ohlcv.backfill import backfill_ohlcv_1m
 from btc_research.ohlcv.collector import collect_latest_ohlcv
@@ -25,6 +27,7 @@ async def main() -> None:
     settings = Settings()
     market_data = BinanceFuturesMarketData(settings.futures_api_url, symbol=settings.symbol)
     ohlcv_market_data = BinanceFuturesKlines(settings.futures_api_url, symbol=settings.symbol)
+    funding_market_data = BinanceFuturesPremiumIndex(settings.futures_api_url, symbol=settings.symbol)
     archive = ArchiveWriter(settings.archive_dir)
     collector = L2Collector(market_data=market_data, websocket_url=settings.websocket_url, symbol=settings.symbol, buffer_size=10_000)
     features = FeatureEngine(depth_levels=10, window_ms=1_000)
@@ -130,6 +133,20 @@ async def main() -> None:
             except asyncio.TimeoutError:
                 pass
 
+    async def funding_basis_persistence_loop() -> None:
+        """Persist public funding/mark/index snapshots without adding another service."""
+        while not stop_event.is_set():
+            try:
+                count = await collect_latest_funding_basis(funding_market_data, supabase, settings.symbol)
+                if count:
+                    log.info("persisted %d funding/basis snapshot(s)", count)
+            except Exception:
+                log.exception("failed to persist funding/basis snapshot")
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=60.0)
+            except asyncio.TimeoutError:
+                pass
+
     async def optional_ohlcv_backfill_task() -> None:
         """Run a bounded one-shot backfill alongside the live collector when enabled."""
         raw_days = os.environ.get("OHLCV_BACKFILL_DAYS", "0").strip()
@@ -194,9 +211,10 @@ async def main() -> None:
 
     feature_task = asyncio.create_task(feature_persistence_loop())
     ohlcv_task = asyncio.create_task(ohlcv_persistence_loop())
+    funding_basis_task = asyncio.create_task(funding_basis_persistence_loop())
     backfill_task = asyncio.create_task(optional_ohlcv_backfill_task())
     health_task = asyncio.create_task(health_loop())
-    log.info("starting BTCUSDT L2 + 1m OHLCV collectors for %s", settings.symbol)
+    log.info("starting BTCUSDT L2 + 1m OHLCV + funding/basis collectors for %s", settings.symbol)
     try:
         await collector.run(on_update=on_update, on_raw=on_raw)
     finally:
@@ -204,7 +222,8 @@ async def main() -> None:
         collector.stop()
         health_task.cancel()
         ohlcv_task.cancel()
-        await asyncio.gather(health_task, ohlcv_task, return_exceptions=True)
+        funding_basis_task.cancel()
+        await asyncio.gather(health_task, ohlcv_task, funding_basis_task, return_exceptions=True)
         if not backfill_task.done():
             backfill_task.cancel()
         await asyncio.gather(backfill_task, return_exceptions=True)
