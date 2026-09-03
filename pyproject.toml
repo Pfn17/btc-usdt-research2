@@ -28,4 +28,4 @@ testpaths = ["tests"]
 where = ["src"]
 
 [tool.vercel]
-entrypoint = "src.btc_research.api:app"
+entrypoint = "src.btc_research.ohlcv_dashboard:app"
