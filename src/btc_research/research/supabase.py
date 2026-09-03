@@ -37,6 +37,10 @@ class SupabaseResearchClient:
             frozenset({"symbol", "server_time_ms", "mark_price", "index_price", "last_funding_rate", "next_funding_time_ms", "collected_at"}),
             frozenset({"symbol", "server_time_ms", "mark_price", "index_price", "last_funding_rate"}),
         ),
+        "funding_rate_events": (
+            frozenset({"symbol", "funding_time_ms", "funding_rate", "mark_price", "collected_at"}),
+            frozenset({"symbol", "funding_time_ms", "funding_rate"}),
+        ),
     }
 
     def __init__(self, url: str | None = None, service_role_key: str | None = None, timeout: float = 10.0) -> None:
@@ -113,6 +117,11 @@ class SupabaseResearchClient:
         if not rows:
             return []
         return self.upsert("funding_basis_snapshots", rows, "symbol,server_time_ms")
+
+    def upsert_funding_events(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        if not rows:
+            return []
+        return self.upsert("funding_rate_events", rows, "symbol,funding_time_ms")
 
     def stop_stale_sessions(self, owner_id: str = "railway-worker", stale_after_seconds: int = 120) -> int:
         cutoff = (datetime.now(timezone.utc) - timedelta(seconds=stale_after_seconds)).isoformat()
