@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from btc_research.marketdata.funding_basis import BinanceFuturesPremiumIndex
@@ -20,5 +21,5 @@ async def collect_latest_funding_basis(market_data: BinanceFuturesPremiumIndex, 
         "last_funding_rate": row.last_funding_rate,
         "next_funding_time_ms": row.next_funding_time_ms,
     }]
-    await __import__("asyncio").to_thread(supabase.upsert_funding_basis, payload)
+    await asyncio.to_thread(supabase.upsert_funding_basis, payload)
     return 1
