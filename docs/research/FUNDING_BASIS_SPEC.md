@@ -1,10 +1,10 @@
 # Funding/Basis Family — Preregistered Research Specification
 
 ## Objective
-Test whether perpetual funding and basis state contain a repeatable short-horizon predictive edge after realistic execution costs.
+Test whether perpetual funding and basis state contain a repeatable predictive edge after realistic execution costs.
 
 ## Status
-UNBUILT / UNVALIDATED. No evidence of profitability is assumed.
+BUILT / UNVALIDATED. No evidence of profitability is assumed.
 
 ## Data
 - Binance public USDⓈ-M futures funding history (`/fapi/v1/fundingRate`)
@@ -21,8 +21,16 @@ UNBUILT / UNVALIDATED. No evidence of profitability is assumed.
 
 No arbitrary threshold grid search is permitted in this family.
 
+## First frozen evaluation
+- Signal observation: latest completed funding observation plus contemporaneous premium-index snapshot.
+- Forward label horizon: **240 minutes (4 hours)**.
+- Sampling cadence: one research observation per funding/basis snapshot; duplicate server timestamps are excluded by the unique key.
+- Temporal evaluation: walk-forward/OOS with purge and embargo using the repository's existing research protocol.
+
+The 240-minute horizon is frozen before inspecting funding/basis performance. It is deliberately longer than the 5–60 minute latency-sensitive tests used for microstructure because funding is an 8-hour periodic structural variable and basis is a slower state variable. This is a single test, not a horizon sweep.
+
 ## Evaluation
-Use only observations available at signal time. Future returns are labels only. Use temporal walk-forward/OOS evaluation with purge and embargo. Report gross EV, fees, spread/slippage assumptions, net EV, sample size, win rate and confidence intervals.
+Use only observations available at signal time. Future returns are labels only. Use temporal walk-forward/OOS evaluation with purge and embargo. Report gross EV, fees, spread/slippage assumptions, net EV, sample size, win rate and confidence intervals. Confidence intervals used for acceptance must correspond to net returns after costs.
 
 ## Cost models
 At minimum evaluate the existing base cost model and a conservative stress model. A positive gross result is never sufficient for acceptance.
