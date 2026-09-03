@@ -1,51 +1,49 @@
-# H-C2 — Conditional Microstructure × OHLCV Edge
+# H-C2 — OHLCV-Only Conditional Edge
 
 ## Objective
-Find a repeatable short-horizon BTCUSDT perpetual edge whose expected value remains positive after spread, fees, slippage and adverse-selection allowance.
+Find a repeatable short-horizon BTCUSDT perpetual edge whose expected value remains positive after fees, spread, slippage and realistic execution costs.
+
+## Family decision
+The microstructure signal family is KILLED. Order-book imbalance, microprice, order-flow and depth variables must not be used as predictive signal features. They may be used later for timing, execution quality, liquidity checks and monitoring only.
 
 ## Frozen hypothesis
-Microstructure imbalance has predictive value only when conditioned on the joint market state: short-horizon OHLCV momentum/reversal, realized volatility, spread/liquidity and order-flow agreement.
+Short-horizon BTCUSDT directional returns contain repeatable conditional information in OHLCV state: recent returns/momentum, candle range, realized volatility, volume and volume regime. The research must determine whether any OHLCV state has positive net EV after costs.
+
+## Signal features
+Allowed predictive inputs are OHLCV-derived only:
+- 1m returns and multi-minute returns
+- candle range / true range
+- realized volatility
+- volume and volume change
+- quote volume
+- trade count
+- taker-buy volume ratio
+- rolling high/low position and breakout distance
+
+Explicitly excluded from signal generation:
+- order-book imbalance
+- microprice
+- depth
+- order-flow imbalance
+- spread as a predictive feature
 
 ## Horizons
-5s, 15s, 30s, 60s, 120s. Horizons are frozen before evaluation.
-
-## Candidate state variables
-- order-book imbalance at available depth levels
-- microprice deviation from mid
-- bid/ask spread in bps
-- bid/ask depth and depth imbalance
-- signed trade/order-flow imbalance
-- short-horizon return and candle range
-- realized volatility
-- volume and volume acceleration
+5m, 15m, 30m, 60m, 120m and 240m. Horizon is frozen before each experiment batch.
 
 ## Rules
-1. Features must use information available at signal timestamp only.
-2. Labels use future mid/mark-price movement only after the signal timestamp.
+1. Every signal feature must be computable using information available at the decision timestamp.
+2. Future OHLCV values are labels only and never predictors.
 3. No random train/test split.
 4. Use temporal walk-forward evaluation with purge and embargo.
-5. No threshold optimization on OOS data.
-6. Every experiment records hypothesis, feature set, horizon, split definition and cost model.
-7. Report gross EV and net EV separately.
-8. Net EV must subtract fees, spread crossing, slippage and an adverse-selection stress allowance.
-9. A candidate is not a trading edge unless positive net EV survives OOS and cost stress tests.
-10. This experiment cannot enable live trading by itself.
-
-## Cost scenarios
-Evaluate at minimum:
-- optimistic: observed execution cost
-- base: observed execution cost + conservative slippage
-- stress: base cost multiplied by 1.5
+5. Thresholds are selected on train data only.
+6. Report gross EV and cost-adjusted net EV separately.
+7. Net EV must subtract fees and conservative slippage; execution assumptions must be explicit.
+8. Reject candidates whose positive EV depends on one fold, one regime or one narrow period.
+9. Apply multiple-testing/FDR controls when searching multiple OHLCV hypotheses.
+10. Microstructure can only enter after signal generation as timing/execution context.
 
 ## Acceptance gate
-A candidate may become PAPER_CANDIDATE only when:
-- OOS net EV > 0 in the base cost model;
-- OOS net EV remains > 0 under stress or has a separately documented degradation boundary;
-- positive performance is present across multiple temporal folds;
-- sample size is sufficient for a stable confidence interval;
-- no leakage or post-signal feature is detected;
-- performance is not concentrated in one isolated regime;
-- execution latency and liquidity constraints are compatible with the signal horizon.
+PAPER_CANDIDATE requires positive OOS net EV, positive lower confidence bound, multiple positive temporal folds, sufficient sample size, no leakage, regime stability and cost-stress survival.
 
 ## Live gate
-LIVE_CANDIDATE requires independent reproduction, paper-trading confirmation, runtime audit coverage, kill-switches and explicit human approval. H-C2 implementation never sets trading_enabled=true.
+LIVE_CANDIDATE requires independent reproduction, paper-trading confirmation, execution monitoring, persistent audit coverage, kill-switches and explicit human approval. H-C2 never enables live trading automatically.
