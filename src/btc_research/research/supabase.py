@@ -21,6 +21,10 @@ class SupabaseResearchClient:
             frozenset({"session_id", "event_time_ms", "direction", "confidence", "expected_move", "horizon_seconds", "data_quality", "risk_status", "rationale"}),
             frozenset({"session_id", "event_time_ms", "direction", "data_quality", "risk_status"}),
         ),
+        "signal_audit_events": (
+            frozenset({"session_id", "event_time_ms", "observed_at", "status", "direction", "source", "rationale", "gate_json", "feature_json"}),
+            frozenset({"event_time_ms", "status", "direction", "source", "gate_json", "feature_json"}),
+        ),
         "contamination_intervals": (
             frozenset({"session_id", "started_at", "ended_at", "reason"}),
             frozenset({"session_id", "started_at", "reason"}),
@@ -122,6 +126,9 @@ class SupabaseResearchClient:
         if not rows:
             return []
         return self.upsert("funding_rate_events", rows, "symbol,funding_time_ms")
+
+    def insert_signal_audit_event(self, event: dict[str, Any]) -> list[dict[str, Any]]:
+        return self.upsert("signal_audit_events", event, "event_time_ms,direction,source")
 
     def stop_stale_sessions(self, owner_id: str = "railway-worker", stale_after_seconds: int = 120) -> int:
         cutoff = (datetime.now(timezone.utc) - timedelta(seconds=stale_after_seconds)).isoformat()
