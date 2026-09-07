@@ -36,3 +36,9 @@ Any feature or label window intersecting a contaminated interval is invalidated.
 
 ## Research entities
 Candidate events must retain immutable IDs and timestamps. Labels record barrier parameters, outcome, MFE, MAE, time-to-target and time-to-stop. Hypotheses record hypothesis ID, parent hypothesis ID, stage, experiment family, generation method and creation timestamp.
+
+## Public performance disclosure
+
+The dashboard is a portfolio archive. Failed research families may expose their failure rationale and aggregate evidence. A future validated family must expose only persisted aggregate performance fields: gross profit, gross loss, net profit, closed observations, wins, losses, win rate, average outcome, profit factor, maximum drawdown, status, and execution status.
+
+The public view must exclude hypothesis identity, feature definitions, parameters, thresholds, entry and exit rules, direction, timing, rationale, source code, query text, and per-trade evidence. A missing aggregate row must return an unavailable state; it must never be replaced by a placeholder, mock, dummy, or fabricated value. The redaction boundary is enforced in backend code rather than by frontend convention.

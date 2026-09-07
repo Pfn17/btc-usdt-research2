@@ -78,6 +78,23 @@ class LiveAPI:
     async def live_imbalance_signal(self,sample_limit:int)->list[dict[str,Any]]:
         return await self.db.rpc("research_live_imbalance_signal",{"p_sample_limit":sample_limit})
 
+PUBLIC_AGGREGATE_FIELDS = (
+    "gross_profit", "gross_loss", "net_profit", "closed_observations",
+    "wins", "losses", "win_rate", "average_outcome", "profit_factor",
+    "maximum_drawdown", "status", "trading_enabled",
+)
+
+def public_aggregate_metrics(row:dict[str,Any]|None)->dict[str,Any]:
+    """Allow only persisted aggregate performance fields into a public view.
+
+    Strategy identity, feature definitions, parameters, direction, timing,
+    rationale, and per-trade evidence are intentionally excluded. Missing
+    persisted metrics remain unavailable rather than being fabricated.
+    """
+    if row is None:
+        return {"status": "UNAVAILABLE", "trading_enabled": False}
+    return {key: row[key] for key in PUBLIC_AGGREGATE_FIELDS if key in row}
+
 def freshness(row:dict[str,Any]|None)->dict[str,Any]:
     if not row:return {"available":False,"stale":True,"age_ms":None}
     value=row.get("receive_time_ns")
