@@ -24,9 +24,10 @@ async def backfill_ohlcv_1m(
 
     This is intentionally a one-shot research utility. It does not touch the
     live L2 collector and only writes the idempotent ohlcv_1m primary key.
+    The 257-day cap is a free-tier storage guard, not a research parameter.
     """
-    if days < 1 or days > 365:
-        raise ValueError("days must be between 1 and 365")
+    if days < 1 or days > 257:
+        raise ValueError("days must be between 1 and 257 on the free-tier guard")
     if batch_size < 1 or batch_size > 1000:
         raise ValueError("batch_size must be between 1 and 1000")
 

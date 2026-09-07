@@ -14,6 +14,7 @@ This file is the shared operating contract for ChatGPT and Claude instances work
 | **claude-1** | `hanz.pirdaus@gmail.com` | **Writer / implementer**; also analysis | Historical commits with this author/committer identity are verified in GitHub history; this proves Git metadata, not which AI session physically executed the action |
 | **claude-2** | `sopiekples@gmail.com` | **Audit / analysis / criticism / reasoning** | GitHub connector reportedly available, but successful write is not currently proven; do not assume write capability |
 | **claude-3** | `parhanfn17@gmail.com` | **Audit / analysis / criticism / reasoning** | Railway, Supabase and Vercel access is available in its session; no GitHub connector was available in the reported session |
+| **manus** | Manus task agent | **Writer / implementer**; GitHub push verified in the current session | Current writer for repository changes; database access is not assumed and must be evidenced separately |
 | **human** | Project owner | Final authority, product decisions, credentials and approvals | Full owner control |
 
 Role assignment is based on the current project agreement. Actual technical permissions must still be verified from the relevant platform before relying on them.
