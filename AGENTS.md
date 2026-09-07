@@ -31,6 +31,12 @@ Do not create parallel repositories, databases, deployments, or substitute infra
 
 ## 3. Non-Negotiable Rules
 
+### 3.0 Free-tier-first owner constraint
+
+The owner has a hard rule: **no paid plan or upgrade is purchased until the project has generated paid revenue first**. This applies to GitHub, Manus, Vercel, Railway, Supabase, Claude, ChatGPT, Grok, and every future provider. Agents must not activate billing, paid add-ons, reserved hosting, or paid API usage without explicit owner approval after presenting the exact cost and rationale. Free-tier capacity is a hard engineering constraint; prefer bounded, batch-oriented, refetchable workflows and version research knowledge/configuration in Git. See `docs/FREE_TIER_GOVERNANCE.md`.
+
+Significant changes must leave a Git commit and a coordination-ledger entry before the next batch begins. Do not use high-frequency AI schedules or duplicate collectors/backfills to simulate monitoring. Never promise that a provider can never hit a limit; measure usage, set a budget, and abort before the cap is threatened.
+
 ### 3.1 One active writer per resource
 
 Only one writer may actively modify the same resource/area at a time. Before starting work, inspect the coordination ledger. If another agent owns an `in_progress` task covering the same area, stop and coordinate instead of editing concurrently. **Owner handoff may explicitly supersede an unavailable writer; record the handoff and lock/supersede the stale task before editing.**
