@@ -63,6 +63,9 @@ class LiveAPI:
         rows=await self.db.select("funding_rate_events",f"select=*&symbol=eq.{self.db.config.symbol}&order=funding_time_ms.desc&limit=1"); return rows[0] if rows else None
     async def signal_audit_events(self,limit:int=50)->list[dict[str,Any]]:
         return await self.db.select("signal_audit_events",f"select=id,session_id,event_time_ms,observed_at,status,direction,source,rationale,gate_json,feature_json&source=eq.H-FB1&order=event_time_ms.desc&limit={max(1,min(limit,200))}")
+    async def signal_history(self,limit:int=50,since_event_time_ms:int|None=None)->list[dict[str,Any]]:
+        since=f"&event_time_ms=gt.{since_event_time_ms}" if since_event_time_ms is not None else ""
+        return await self.db.select("signal_audit_events",f"select=id,session_id,event_time_ms,observed_at,status,direction,source,rationale,gate_json,feature_json&source=eq.H-FB1{since}&order=event_time_ms.desc&limit={max(1,min(limit,200))}")
     async def edge_scan(self,horizon_seconds:int,fee_bps:float|None,sample_limit:int,as_of_event_time_ms:int|None)->list[dict[str,Any]]:
         return await self.db.rpc("research_edge_scan_frozen",{"horizon_seconds":horizon_seconds,"fee_bps":fee_bps,"sample_limit":sample_limit,"as_of_event_time_ms":as_of_event_time_ms})
     async def wfo_scan(self,as_of_event_time_ms:int,horizon_seconds:int,sample_limit:int,purge_seconds:int,embargo_seconds:int,fee_bps:float,slippage_bps:float)->list[dict[str,Any]]:
@@ -142,6 +145,14 @@ async def signals_log(limit:int=Query(50,ge=1,le=200))->dict[str,Any]:
     try:rows=await app.state.live.signal_audit_events(limit)
     except Exception as exc:raise HTTPException(status_code=503,detail="signal audit unavailable") from exc
     return {"data":rows,"count":len(rows),"source":"H-FB1"}
+
+@app.get("/api/v1/signal/history")
+async def signal_history(limit:int=Query(50,ge=1,le=200),since_event_time_ms:int|None=Query(None,ge=0))->dict[str,Any]:
+    """Read-only event history for operators who were not watching the dashboard."""
+    try:
+        rows=await app.state.live.signal_history(limit,since_event_time_ms)
+    except Exception as exc:raise HTTPException(status_code=503,detail="signal history unavailable") from exc
+    return {"data":rows,"count":len(rows),"unseen_count":len(rows) if since_event_time_ms is not None else 0,"last_event":rows[0] if rows else None,"source":"H-FB1","read_only":True}
 
 @app.get("/api/v1/signal/hfb1/current")
 async def hfb1_current()->dict[str,Any]:
