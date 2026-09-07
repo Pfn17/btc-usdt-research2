@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_dashboard_asset_exists():
     dashboard = ROOT / "dashboard" / "index.html"
     assert dashboard.is_file()
-    assert "BTCUSDT Research Dashboard" in dashboard.read_text(encoding="utf-8")
+    assert "HyperHan Research Archive" in dashboard.read_text(encoding="utf-8")
 
 
 def test_dashboard_is_explicitly_read_only():
@@ -16,12 +16,18 @@ def test_dashboard_is_explicitly_read_only():
     assert "fabricate" in html
 
 
-def test_dashboard_has_resource_light_dynamic_diagrams():
+def test_dashboard_is_a_research_archive():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
-    assert 'id="systemMap"' in html
-    assert 'id="lifecycle"' in html
-    assert "renderSystemMap" in html
-    assert "no additional polling" in html
+    assert "Research Archive" in html
+    assert "No validated edge." in html
+    assert "LIVE EVIDENCE" in html
+    assert "Find edges. Reject noise." not in html
+    assert 'id="systemMap"' not in html
+    assert 'id="lifecycle"' not in html
+    assert 'id="start"' not in html
+    assert 'id="run"' not in html
+    assert "Observed funding direction" in html
+    assert "class=\"value observed\"" in html
 
 
 def test_landing_page_exists_and_links_to_console():

@@ -1,6 +1,6 @@
 # BTCUSDT Edge Research — Experiment Ledger
 
-Updated: 2026-09-04
+Updated: 2026-09-08
 
 ## Objective
 
@@ -99,6 +99,12 @@ The exact H-FB3 specification is **not yet chosen** and must be frozen before te
 Existing Stage-3 infrastructure was built before Stage-2 proof. Treat it as debt, not evidence of edge.
 
 Existing signal/audit logs should be preserved and never reset merely to make a new experiment cleaner.
+
+## Production archive synchronization — 2026-09-08
+
+The production Supabase registry contains `fam-swing-v1` and a frozen `H-SW1` row. This database registration is evidence that a hypothesis was registered, not evidence that it passed validation. No `research_*swing*` function exists, and H-SW1 remains **unverified in Git** until its complete specification, invocation, result export, and independent verification are committed.
+
+The portfolio dashboard is a **Research Archive**. Its live values are observability evidence only. The archive must not present `LONG`, collector health, or any other observed state as profitability, a validated edge, or trading approval. H-FB1 remains **KILL**, the funding family remains **CLOSED**, and execution remains **OFF**.
 
 ## Hard Stop
 
