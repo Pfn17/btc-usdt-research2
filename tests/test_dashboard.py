@@ -30,6 +30,18 @@ def test_dashboard_is_a_research_archive():
     assert "class=\"value observed\"" in html
 
 
+def test_dashboard_has_instrument_style_local_interactions():
+    html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
+    assert "SF Pro Display" in html
+    assert "data:image/svg+xml" in html
+    assert "archive-tab" in html
+    assert "setupTabs" in html
+    assert "updateClock" in html
+    assert "EXECUTION OFF" in html
+    assert "No new endpoint, storage, or trading signal" in html
+    assert "fetch('/api/v1/market/ohlcv/latest?limit=3')" not in html
+
+
 def test_landing_page_exists_and_links_to_console():
     landing = ROOT / "landing" / "index.html"
     assert landing.is_file()
