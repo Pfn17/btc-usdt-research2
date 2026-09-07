@@ -30,16 +30,17 @@ def test_dashboard_is_a_research_archive():
     assert "class=\"value observed\"" in html
 
 
-def test_dashboard_has_instrument_style_local_interactions():
+def test_dashboard_has_instrument_style_binance_only_surface():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
     assert "SF Pro Display" in html
     assert "data:image/svg+xml" in html
-    assert "archive-tab" in html
-    assert "setupTabs" in html
     assert "updateClock" in html
     assert "EXECUTION OFF" in html
-    assert "No new endpoint, storage, or trading signal" in html
-    assert "fetch('/api/v1/market/ohlcv/latest?limit=3')" not in html
+    assert "/api/v1/market/ohlcv/latest?limit=3" in html
+    assert "archive-tab" not in html
+    assert "evidencePulse" not in html
+    assert "telemetry" not in html
+    assert "data-panel" not in html
 
 
 def test_landing_page_exists_and_links_to_console():
