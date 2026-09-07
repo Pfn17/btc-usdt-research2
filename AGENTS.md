@@ -10,11 +10,11 @@ This file is the shared operating contract for ChatGPT and Claude instances work
 
 | Agent | Account / Email | Primary role | Current capability status |
 |---|---|---|---|
-| **chatgpt** | ChatGPT operator | **Writer / implementer**; also analysis and engineering | GitHub read/write/admin verified in the current session; repository access is live |
+| **chatgpt** | ChatGPT operator | **Writer / implementer**; also analysis and engineering | **NON-AVAILABLE** per owner report on 2026-09-07; do not wait for or assume active ChatGPT execution until the owner reactivates it |
 | **claude-1** | `hanz.pirdaus@gmail.com` | **Writer / implementer**; also analysis | Historical commits with this author/committer identity are verified in GitHub history; this proves Git metadata, not which AI session physically executed the action |
 | **claude-2** | `sopiekples@gmail.com` | **Audit / analysis / criticism / reasoning** | GitHub connector reportedly available, but successful write is not currently proven; do not assume write capability |
 | **claude-3** | `parhanfn17@gmail.com` | **Audit / analysis / criticism / reasoning** | Railway, Supabase and Vercel access is available in its session; no GitHub connector was available in the reported session |
-| **manus** | Manus task agent | **Writer / implementer**; GitHub push verified in the current session | Current writer for repository changes; database access is not assumed and must be evidenced separately |
+| **manus** | Manus task agent | **Writer / implementer**; GitHub push verified in the current session | **Acting writer for repository/dashboard changes by owner handoff on 2026-09-07**; database access is not assumed and must be evidenced separately |
 | **human** | Project owner | Final authority, product decisions, credentials and approvals | Full owner control |
 
 Role assignment is based on the current project agreement. Actual technical permissions must still be verified from the relevant platform before relying on them.
@@ -33,7 +33,7 @@ Do not create parallel repositories, databases, deployments, or substitute infra
 
 ### 3.1 One active writer per resource
 
-Only one writer may actively modify the same resource/area at a time. Before starting work, inspect the coordination ledger. If another agent owns an `in_progress` task covering the same area, stop and coordinate instead of editing concurrently.
+Only one writer may actively modify the same resource/area at a time. Before starting work, inspect the coordination ledger. If another agent owns an `in_progress` task covering the same area, stop and coordinate instead of editing concurrently. **Owner handoff may explicitly supersede an unavailable writer; record the handoff and lock/supersede the stale task before editing.**
 
 ### 3.2 Claims are not evidence
 
