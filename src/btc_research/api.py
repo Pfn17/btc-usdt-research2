@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict
 STALE_AFTER_MS = int(os.environ.get("BTC_API_STALE_AFTER_MS", "2000"))
 WS_POLL_SECONDS = float(os.environ.get("BTC_API_WS_POLL_SECONDS", "1.0"))
 DASHBOARD_PATH = Path(__file__).resolve().parents[2] / "dashboard" / "index.html"
+LANDING_PATH = Path(__file__).resolve().parents[2] / "landing" / "index.html"
 
 class APIConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -99,6 +100,11 @@ app=FastAPI(title="BTCUSDT Research API",version="0.6.1",default_response_class=
 async def dashboard()->FileResponse:
     if not DASHBOARD_PATH.is_file():raise HTTPException(status_code=404,detail="dashboard unavailable")
     return FileResponse(DASHBOARD_PATH,media_type="text/html")
+
+@app.get("/lab",response_class=FileResponse,include_in_schema=False)
+async def landing()->FileResponse:
+    if not LANDING_PATH.is_file():raise HTTPException(status_code=404,detail="landing page unavailable")
+    return FileResponse(LANDING_PATH,media_type="text/html")
 
 @app.get("/health")
 async def health()->dict[str,Any]:
