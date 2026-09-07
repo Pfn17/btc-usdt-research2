@@ -1,0 +1,30 @@
+{
+  "generated_at_utc": "2026-09-07T11:39:30Z",
+  "project_ref": "xaqsntunrqvqpzlbeutt",
+  "project_name": "btc-usdt-research2",
+  "repository": "Pfn17/btc-usdt-research",
+  "repository_state": "empty repository at audit time; no commit pushed",
+  "scope": "read-only catalog and metadata audit; no Supabase or GitHub mutation performed",
+  "captured": {
+    "ledger_rows": 41,
+    "function_definitions": 37,
+    "migrations_reported": 37,
+    "edge_functions": 1,
+    "cron_jobs": 1,
+    "public_tables": 20,
+    "rls_policies": 9,
+    "triggers": 1
+  },
+  "omitted_or_not_safe_to_restore": [
+    "auth, storage, vault, realtime internal schemas and user credentials",
+    "service secrets, API keys, JWT signing material, environment variables",
+    "large market tables feature_snapshots (~306 MB) and ohlcv_1m (~44 MB) as Git blobs",
+    "full CREATE TABLE/constraint dump was not available from the read-only MCP catalog calls; migration manifest is retained for replay provenance"
+  ],
+  "validation_notes": [
+    "Supabase reports 37 migrations through 2026-09-07.",
+    "agent_coordination_log reports 41 rows.",
+    "Repository clone returned empty repository with no commits on main.",
+    "The source file contains a service-role key lookup but no key value; no secret was exported."
+  ]
+}
