@@ -27,16 +27,22 @@ def test_dashboard_is_a_research_archive():
     assert 'id="start"' not in html
     assert 'id="run"' not in html
     assert "Observed funding direction" in html
-    assert "class=\"value observed\"" in html
+    assert 'class="value observed"' in html
 
 
-def test_dashboard_has_instrument_style_binance_only_surface():
+def test_dashboard_has_exchange_archive_surface():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
-    assert "SF Pro Display" in html
-    assert "data:image/svg+xml" in html
-    assert "updateClock" in html
-    assert "EXECUTION OFF" in html
-    assert "/api/v1/market/ohlcv/latest?limit=3" in html
+    assert "Inter,Arial,Helvetica,sans-serif" in html
+    assert "#f0b90b" in html
+    assert "#181a20" in html
+    assert "Run comparison once" in html
+    assert "Reference specification" in html
+    assert "Independent specification" in html
+    assert "Claude" not in html
+    assert "Manus" not in html
+    assert "SF Pro Display" not in html
+    assert "glow" not in html.lower()
+    assert "gradient" not in html.lower()
     assert "archive-tab" not in html
     assert "evidencePulse" not in html
     assert "telemetry" not in html
