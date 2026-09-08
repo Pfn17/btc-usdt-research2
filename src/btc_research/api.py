@@ -76,7 +76,10 @@ class LiveAPI:
     async def hfb1_scan(self,oos_start_ms:int,as_of_event_time_ms:int,fee_bps:float=4.0,slippage_bps:float=1.0)->list[dict[str,Any]]:
         return await self.db.rpc("research_funding_hfb1",{"p_oos_start_ms":oos_start_ms,"p_as_of_event_time_ms":as_of_event_time_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
     async def sw1_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]:
-        return await self.db.rpc("research_sw1_scan_frozen",{"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
+        return await self.db.rpc("research_sw1_manus_scan_frozen",{"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
+    async def sw1_claude_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]:
+        text_as_of=str(as_of_ms) if as_of_ms is not None else None
+        return await self.db.rpc("research_sw1_scan_frozen",{"p_as_of_ms":text_as_of,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
     async def live_imbalance_signal(self,sample_limit:int)->list[dict[str,Any]]:
         return await self.db.rpc("research_live_imbalance_signal",{"p_sample_limit":sample_limit})
 
@@ -198,14 +201,23 @@ async def research_hfb1(oos_start_ms:int|None=Query(None,ge=0),fee_bps:float=Que
         return {"status":"RESEARCH_ONLY","data":rows,"parameters":{"oos_start_ms":start,"as_of_event_time_ms":as_of,"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps,"horizon_minutes":240},"trading_enabled":False}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-FB1 research unavailable") from exc
 
-@app.get("/api/v1/research/sw1")
-async def research_sw1()->dict[str,Any]:
+@app.get("/api/v1/research/sw1-manus")
+async def research_sw1_manus()->dict[str,Any]:
     try:
         latest=await app.state.live.latest_ohlcv(1)
         as_of_ms=int(latest[0]["open_time_ms"]) if latest else None
         rows=await app.state.live.sw1_scan(as_of_ms,4.0,1.0,3)
-        return {"status":"RESEARCH_ONLY","data":rows,"parameters":{"as_of_ms":as_of_ms,"fee_bps_per_side":4.0,"slippage_bps_per_side":1.0,"funding_lookback_events":3,"horizon_hours":24},"trading_enabled":False,"research_status":"inconclusive_underpowered_period_unstable"}
-    except Exception as exc:raise HTTPException(status_code=503,detail="H-SW1 research unavailable") from exc
+        return {"status":"RESEARCH_ONLY","method":"H-SW1-MANUS","data":rows,"parameters":{"as_of_ms":as_of_ms,"fee_bps_per_side":4.0,"slippage_bps_per_side":1.0,"funding_lookback_events":3,"horizon_hours":24},"trading_enabled":False,"research_status":"independent_method_unverified"}
+    except Exception as exc:raise HTTPException(status_code=503,detail="H-SW1-MANUS research unavailable") from exc
+
+@app.get("/api/v1/research/sw1-claude")
+async def research_sw1_claude()->dict[str,Any]:
+    try:
+        latest=await app.state.live.latest_ohlcv(1)
+        as_of_ms=int(latest[0]["open_time_ms"]) if latest else None
+        rows=await app.state.live.sw1_claude_scan(as_of_ms,4.0,1.0,3)
+        return {"status":"RESEARCH_ONLY","method":"H-SW1-CLAUDE","data":rows,"parameters":{"as_of_ms":as_of_ms,"fee_bps_per_side":4.0,"slippage_bps_per_side":1.0,"funding_lookback_events":3,"horizon_hours":24},"trading_enabled":False,"research_status":"official_result_requires_independent_verification"}
+    except Exception as exc:raise HTTPException(status_code=503,detail="H-SW1-CLAUDE research unavailable") from exc
 
 @app.get("/api/v1/research/edge-scan")
 async def research_edge_scan(horizon_seconds:int=Query(60,ge=60,le=300),fee_bps:float|None=Query(None,ge=0,le=100),sample_limit:int=Query(50000,ge=5000,le=200000),as_of_event_time_ms:int|None=Query(None,ge=0))->dict[str,Any]:

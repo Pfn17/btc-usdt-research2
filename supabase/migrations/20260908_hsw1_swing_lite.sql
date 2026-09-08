@@ -1,7 +1,7 @@
--- H-SW1: 24-hour swing-lite confirmation of prior price momentum and
+-- H-SW1-MANUS: independent 24-hour swing-lite implementation of prior price momentum and
 -- the sign of the three most recent completed funding events.
--- This function is research-only. It is not an execution or promotion gate.
-CREATE OR REPLACE FUNCTION public.research_sw1_scan_frozen(
+-- This function is research-only and is not equivalent to the official Claude H-SW1 RPC. It is not an execution or promotion gate.
+CREATE OR REPLACE FUNCTION public.research_sw1_manus_scan_frozen(
   p_as_of_ms bigint,
   p_fee_bps numeric DEFAULT 4,
   p_slippage_bps numeric DEFAULT 1,
@@ -112,5 +112,5 @@ stats AS (
 SELECT * FROM stats ORDER BY CASE WHEN bucket='overall' THEN 0 ELSE 1 END,bucket;
 $function$;
 
-REVOKE ALL ON FUNCTION public.research_sw1_scan_frozen(bigint,numeric,numeric,integer) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.research_sw1_scan_frozen(bigint,numeric,numeric,integer) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.research_sw1_manus_scan_frozen(bigint,numeric,numeric,integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.research_sw1_manus_scan_frozen(bigint,numeric,numeric,integer) TO anon, authenticated, service_role;
