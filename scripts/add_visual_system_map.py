@@ -1,0 +1,9 @@
+from pathlib import Path
+p=Path(__file__).resolve().parents[1]/'dashboard'/'index.html'
+s=p.read_text(encoding='utf-8')
+anchor='<div class="section-title">Research record <span class="tag">FROZEN RESULTS · MANUAL READ</span></div>'
+block='''<div class="section-title">System map <span class="tag">STATUS DERIVED FROM CURRENT READ</span></div><section class="chart-card"><div class="chart-head"><strong>Evidence path</strong><span>Binance → API → archive</span></div><svg viewBox="0 0 900 150" role="img" aria-label="Live evidence system map"><g fill="none" stroke="var(--line)" stroke-width="2"><path d="M190 75h100M410 75h100M630 75h100"/><rect x="20" y="35" width="170" height="80" rx="6"/><rect x="290" y="35" width="120" height="80" rx="6"/><rect x="510" y="35" width="120" height="80" rx="6"/><rect x="730" y="35" width="150" height="80" rx="6"/></g><g text-anchor="middle" fill="currentColor" font-family="inherit"><text x="105" y="68" font-size="13" font-weight="700">Binance</text><text x="105" y="91" font-size="10" fill="var(--muted)">public market data</text><text x="350" y="68" font-size="13" font-weight="700">API</text><text x="350" y="91" font-size="10" fill="var(--muted)">health + OHLCV</text><text x="570" y="68" font-size="13" font-weight="700">Research store</text><text x="570" y="91" font-size="10" fill="var(--muted)">persisted evidence</text><text x="805" y="68" font-size="13" font-weight="700">HyperHan Lab</text><text x="805" y="91" font-size="10" fill="var(--muted)">read-only pages</text></g></svg><div class="refresh-note">The map explains the data path; its status is represented by the live header and metric cards.</div></section>'''
+if 'aria-label="Live evidence system map"' not in s:
+    s=s.replace(anchor,block+anchor,1)
+p.write_text(s,encoding='utf-8')
+print('visual system map added')
