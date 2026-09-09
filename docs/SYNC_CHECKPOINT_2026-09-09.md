@@ -3,7 +3,7 @@
 **Writer:** Manus 1  
 **Repository:** `Pfn17/btc-usdt-research2`  
 **Canonical branch:** `main`  
-**Head after this checkpoint:** recorded in Git after commit/push
+**Head after this checkpoint:** `5b51f8121340cad5dae08194e38b24dd23b36984`
 
 ## Canonical state
 
@@ -11,7 +11,7 @@ GitHub `main`, the production Supabase migration history, and the experiment led
 
 | Area | Canonical state | Evidence |
 |---|---|---|
-| Dashboard | Three local presentation modes: Terminal, Clean, Story | commit `689dcd4` |
+| Dashboard | Three real pages: Overview, Visual, Story; Overview refreshes at 15s, the other pages at 5m | commit `5b51f81` |
 | H-SW1 reference | Claude lineage, text-typed RPC | `research_sw1_scan_frozen(text,numeric,numeric,integer)` |
 | H-SW1 independent | Manus lineage, bigint-typed RPC | `research_sw1_manus_scan_frozen(bigint,numeric,numeric,integer)` |
 | Manus migration | Applied in Supabase | migration `20260908025302` / `20260908_hsw1_manus_swing_lite` |
@@ -39,7 +39,7 @@ Some older coordination rows remain as historical proposals or blocking findings
 - `hsw1-manus-rpc-apply-2026-09-08`: implementation claim; live migration and function signatures are now verified.
 - `dashboard-3mode-architecture-spec-2026-09-08`: historical design proposal; implemented by commit `689dcd4`.
 - `dashboard-3mode-mode3-chart-svg-2026-09-08`: historical component proposal; Story / Visual now contains a live-price chart and EV/CI chart using cached backend data.
-- `dashboard-themes-phase2-boundary-2026-09-08`: historical draft wording; superseded by the three final labels Terminal, Clean, and Story. Phase 2 remains unrun.
+- `dashboard-themes-phase2-boundary-2026-09-08`: historical draft wording; superseded by page-level information architecture. Overview is the owner monitoring surface; Visual is a slower analytical view; Story is the public portfolio/background view. Phase 2 remains unrun.
 
 Historical rows remain visible intentionally; none should be interpreted as an active unowned task without checking this checkpoint and the current Git head.
 
