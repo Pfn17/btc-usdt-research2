@@ -38,16 +38,14 @@ def test_dashboard_has_three_mode_archive_surface():
     assert "Run comparison once" in html
     assert "reference specification" in html
     assert "independent specification" in html
-    assert "H-SW1-CLAUDE" in html
-    assert "H-SW1-MANUS" in html
     assert "value=\"terminal\"" in html
-    assert "value=\"apple\"" in html
+    assert "value=\"clean\"" in html
     assert "value=\"story\"" in html
-    assert "story-shell" in html
-    assert "renderEVChart" in html
-    assert "renderPriceChart" in html
-    assert "system map" in html.lower()
-    assert "what this system can prove" in html.lower()
+    assert "id=\"chartPanel\"" in html
+    assert "id=\"storyPanel\"" in html
+    assert "id=\"marketChart\"" in html
+    assert "story record" in html.lower()
+    assert "Apple" not in html
     assert "archive-tab" not in html
     assert "evidencePulse" not in html
     assert "telemetry" not in html

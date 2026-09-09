@@ -61,8 +61,8 @@ body[data-theme="story"]{--bg:#111315;--panel:#17191c;--panel-2:#202328;--line:#
 <footer class="footnote" style="max-width:1280px;margin:0 auto;padding:0 28px 38px;text-align:center">HyperHan Lab · research archive by <strong>Parhan</strong> · <a href="https://github.com/Pfn17/btc-usdt-research2" style="color:var(--cyan)">GitHub</a> · <a href="https://www.instagram.com/parhanfirdausnugraha/" rel="noopener noreferrer" style="color:var(--cyan)">@parhanfirdausnugraha</a><br><span>Observed data is not a validated edge. No exchange orders are sent.</span></footer>
 <script>
 const $=id=>document.getElementById(id);
-function applyTheme(theme){const allowed=['terminal','clean','story'];const value=allowed.includes(theme)?theme:'exchange';document.body.dataset.theme=value;const selector=document.getElementById('themeSelect');if(selector)selector.value=value;try{localStorage.setItem('hyperhan-theme',value)}catch(e){}}
-applyTheme((()=>{try{return localStorage.getItem('hyperhan-theme')||'terminal'}catch(e){return 'exchange'}})());
+function applyTheme(theme){const allowed=['terminal','clean','story'];const value=allowed.includes(theme)?theme:'terminal';document.body.dataset.theme=value;const selector=document.getElementById('themeSelect');if(selector)selector.value=value;try{localStorage.setItem('hyperhan-theme',value)}catch(e){}}
+applyTheme((()=>{try{return localStorage.getItem('hyperhan-theme')||'terminal'}catch(e){return 'terminal'}})());
 document.getElementById('themeSelect').addEventListener('change',event=>applyTheme(event.target.value));
 
 const fmt=(x,d=3)=>x==null||Number.isNaN(Number(x))?'—':Number(x).toLocaleString(undefined,{maximumFractionDigits:d});
