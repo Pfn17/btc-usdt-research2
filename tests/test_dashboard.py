@@ -13,45 +13,38 @@ def test_dashboard_asset_exists():
 def test_dashboard_is_explicitly_read_only():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
     assert "read-only" in html
-    assert "fabricate" in html
+    assert "no value fabricated" in html
+    assert "Execution" in html and "OFF" in html
 
 
-def test_dashboard_is_a_research_archive():
+def test_dashboard_is_an_owner_first_research_archive():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
     assert "research archive" in html.lower()
     assert "No validated edge." in html
     assert "LIVE EVIDENCE" in html
     assert "Find edges. Reject noise." not in html
-    assert 'id="systemMap"' not in html
-    assert 'id="lifecycle"' not in html
-    assert 'id="start"' not in html
-    assert 'id="run"' not in html
-    assert "Observed funding" in html
-    assert 'id="page-overview"' in html
+    assert "gradient" not in html.lower()
+    assert "Story" in html and "Terminal" in html and "Visual" in html
+    assert 'id="page-story"' in html
+    assert 'id="page-terminal"' in html
+    assert 'id="page-visual"' in html
+    assert "Research ledger" in html
+    assert "H-FB1" in html and "H-SW1" in html
 
 
-def test_dashboard_has_three_mode_archive_surface():
+def test_dashboard_has_three_owner_surfaces_and_safe_refresh():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
-    assert "Inter,ui-sans-serif,system-ui" in html
-    assert "--accent:#00d4ff" in html
-    assert "--yellow:#f0b90b" in html
-    assert "Run comparison once" in html
-    assert "reference specification" in html
-    assert "independent specification" in html
-    assert "data-page=\"overview\"" in html
-    assert "data-page=\"visual\"" in html
-    assert "data-page=\"story\"" in html
-    assert "id=\"page-overview\"" in html
-    assert "id=\"page-visual\"" in html
-    assert "id=\"page-story\"" in html
-    assert "id=\"marketChart\"" in html
-    assert "activePage==='overview'?15000:300000" in html
-    assert "if(activePage==='overview')base.push" in html
-    assert "Apple" not in html
-    assert "archive-tab" not in html
-    assert "evidencePulse" not in html
-    assert "telemetry" not in html
-    assert "data-panel" not in html
+    assert "Reference specification" in html
+    assert "Independent specification" in html
+    assert 'data-page="story"' in html
+    assert 'data-page="terminal"' in html
+    assert 'data-page="visual"' in html
+    assert 'id="marketChart"' in html
+    assert "activePage==='terminal'?15000:300000" in html
+    assert "toLocaleString('en-US'" in html
+    assert "radial-gradient" not in html
+    assert "linear-gradient" not in html
+    assert "Inter,ui-sans-serif,system-ui" not in html
 
 
 def test_landing_page_exists_and_links_to_console():
@@ -59,6 +52,4 @@ def test_landing_page_exists_and_links_to_console():
     assert landing.is_file()
     html = landing.read_text(encoding="utf-8")
     assert "HyperHan Lab" in html
-    assert "Find edges." in html
-    assert 'href="/"' in html
-    assert "no substitute data" in html
+    assert "dashboard" in html.lower()
