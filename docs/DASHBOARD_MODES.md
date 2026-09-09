@@ -1,13 +1,15 @@
-# Dashboard Modes
+# Dashboard Pages
 
-The dashboard provides three local presentation modes over the same backend responses. The selector changes layout and visual treatment only; it never changes a query, research parameter, result, or execution state.
+The dashboard is one application with three real pages, not three skins. The page navigation changes the information architecture and the purpose of the view.
 
-| Mode | Purpose | Additional content |
-|---|---|---|
-| Terminal | Default market archive for quick monitoring | Compact cards, health state, audit log, and frozen research summaries |
-| Clean | Calm reading console | Recent-close SVG chart computed from the existing OHLCV response |
-| Story | Portfolio and research narrative | The same chart plus observed candle count, window, close change, and explanatory context |
+| Page | Owner purpose | Content | Refresh |
+|---|---|---|---|
+| Overview | Primary monitoring surface | Current BTCUSDT price, funding observation, freshness, safety gate, decision state, and system health | 15 seconds |
+| Visual | Alternative analytical view | Backend-derived close chart, observation window, lightweight metrics, and manually requested frozen-study comparison | 5 minutes; comparison is manual |
+| Story | Public portfolio, background, collaboration, and pitching context | Project narrative plus live proof points such as current price, health, and captured audit count | 5 minutes |
 
-The chart is deliberately lightweight. It is an inline SVG generated in the browser from the existing 24-candle OHLCV response. It uses no chart library, no new endpoint, no database write, and no external asset. If the backend response contains insufficient data, the chart remains unavailable rather than fabricating a line.
+Overview is the only page intended for continuous monitoring. Visual and Story deliberately use a slower cadence because they are alternative perspectives, not operational streams.
 
-The mode choice is stored only in browser `localStorage`. It is not a user account setting and does not affect other viewers. The default is Terminal.
+All values are sourced from the existing backend API. Visual uses an inline SVG chart computed in the browser from the existing 24-candle OHLCV response; it adds no library, endpoint, storage, or database write. Story combines persisted project context with backend-derived facts and explicitly states the evidence boundary. If the API is unavailable, the page shows an unavailable state rather than inventing values.
+
+The page choice is stored locally in the browser and does not alter research parameters, execution state, or data queries beyond the page-specific read set. No page promotes a method or claims a validated edge.

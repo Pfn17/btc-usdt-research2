@@ -1,0 +1,10 @@
+from pathlib import Path
+p=Path(__file__).resolve().parents[1]/'dashboard'/'index.html'
+s=p.read_text(encoding='utf-8')
+s=s.replace("function setPage(page){activePage=page;document.body.dataset.page=page;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+page));document.querySelectorAll('.page-nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===page));$('themeSelect').value=page;loadPage();clearInterval(timer);timer=setInterval(loadPage,page==='overview'?15000:300000)}", "function setPage(page){activePage=['overview','visual','story'].includes(page)?page:'overview';document.body.dataset.page=activePage;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+activePage));document.querySelectorAll('.page-nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===activePage));$('themeSelect').value=activePage;try{localStorage.setItem('hyperhan-page',activePage)}catch(e){};loadPage();clearInterval(timer);timer=setInterval(loadPage,activePage==='overview'?15000:300000)}")
+old="const [h,o,s,l,f]=await Promise.all([get('/health'),get('/api/v1/market/ohlcv/latest?limit=24'),get('/api/v1/signal/hfb1/current'),get('/api/v1/signals/log?limit=30'),get('/api/v1/funding/latest')]);"
+new="const base=[get('/health'),get('/api/v1/market/ohlcv/latest?limit=24')];if(activePage==='overview')base.push(get('/api/v1/signal/hfb1/current'),get('/api/v1/signals/log?limit=30'),get('/api/v1/funding/latest'));const [h,o,s,l,f]=await Promise.all(base);s=s||{};l=l||{data:[]};f=f||{};"
+s=s.replace(old,new)
+s=s.replace("try{setPage(localStorage.getItem('hyperhan-page')||'overview')}catch(e){setPage('overview')}try{new MutationObserver(()=>{try{localStorage.setItem('hyperhan-page',activePage)}catch(e){}}).observe(document.body,{attributes:true,attributeFilter:['data-page']})}catch(e){}", "try{setPage(localStorage.getItem('hyperhan-page')||'overview')}catch(e){setPage('overview')}")
+p.write_text(s,encoding='utf-8')
+print('refresh policy optimized')

@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_dashboard_asset_exists():
     dashboard = ROOT / "dashboard" / "index.html"
     assert dashboard.is_file()
-    assert "HyperHan Research Archive" in dashboard.read_text(encoding="utf-8")
+    assert "HyperHan Lab" in dashboard.read_text(encoding="utf-8")
 
 
 def test_dashboard_is_explicitly_read_only():
@@ -18,7 +18,7 @@ def test_dashboard_is_explicitly_read_only():
 
 def test_dashboard_is_a_research_archive():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
-    assert "Research Archive" in html
+    assert "research archive" in html.lower()
     assert "No validated edge." in html
     assert "LIVE EVIDENCE" in html
     assert "Find edges. Reject noise." not in html
@@ -26,25 +26,27 @@ def test_dashboard_is_a_research_archive():
     assert 'id="lifecycle"' not in html
     assert 'id="start"' not in html
     assert 'id="run"' not in html
-    assert "Observed funding direction" in html
-    assert 'class="value observed"' in html
+    assert "Observed funding" in html
+    assert 'id="page-overview"' in html
 
 
 def test_dashboard_has_three_mode_archive_surface():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
-    assert "Inter,Arial,Helvetica,sans-serif" in html
-    assert "#f0b90b" in html
-    assert "#181a20" in html
+    assert "Inter,ui-sans-serif,system-ui" in html
+    assert "--accent:#00d4ff" in html
+    assert "--yellow:#f0b90b" in html
     assert "Run comparison once" in html
     assert "reference specification" in html
     assert "independent specification" in html
-    assert "value=\"terminal\"" in html
-    assert "value=\"clean\"" in html
-    assert "value=\"story\"" in html
-    assert "id=\"chartPanel\"" in html
-    assert "id=\"storyPanel\"" in html
+    assert "data-page=\"overview\"" in html
+    assert "data-page=\"visual\"" in html
+    assert "data-page=\"story\"" in html
+    assert "id=\"page-overview\"" in html
+    assert "id=\"page-visual\"" in html
+    assert "id=\"page-story\"" in html
     assert "id=\"marketChart\"" in html
-    assert "story record" in html.lower()
+    assert "activePage==='overview'?15000:300000" in html
+    assert "if(activePage==='overview')base.push" in html
     assert "Apple" not in html
     assert "archive-tab" not in html
     assert "evidencePulse" not in html
