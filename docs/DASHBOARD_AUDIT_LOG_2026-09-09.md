@@ -29,3 +29,24 @@
 - Changed file: `dashboard/index.html`
 - Coordination checkpoint updated in `docs/SYNC_CHECKPOINT_2026-09-09.md`
 - Status: `claimed_done`, pending independent verification
+
+
+## Owner-first total refresh — 2026-09-09
+
+**Writer:** Manus
+**Scope:** owner-facing dashboard surface, landing entry point, and static contract tests
+**Commit:** `b416ae01fb2e475e85357672b5c141fe46d273b4`
+
+### Synchronization basis
+
+Before editing, GitHub `main`, Supabase project `xaqsntunrqvqpzlbeutt`, the experiment ledger, the live-only dashboard policy, and the coordination ledger were inspected. No research migration, RPC, result row, execution path, or API contract was changed. The active writer lock was recorded in `public.agent_coordination_log` as `dashboard-owner-first-total-refresh-2026-09-09`.
+
+### Surface changes
+
+The dashboard now presents Story, Terminal, and Visual as three owner-facing surfaces. Story is the briefing page, Terminal is the research record, and Visual is the observation view. The presentation was rebuilt with a restrained dark archive language: no gradients, no neon glow, no agent/model branding, explicit status labels, fixed `en-US` numeric formatting, and clear `UNAVAILABLE` / `no value fabricated` states. H-FB1 remains `KILL`, H-SW1 remains `INCONCLUSIVE`, and execution remains `OFF`.
+
+The legacy `/lab` entry point now redirects to the canonical dashboard instead of presenting a second inconsistent landing experience.
+
+### Verification evidence
+
+The repository validator passed, dashboard JavaScript passed `node --check`, and the full local suite passed with `53 passed, 2 skipped`. The production read-only endpoints returned live responses for `/health`, `/api/v1/market/ohlcv/latest`, `/api/v1/funding/latest`, and `/api/v1/signals/log`. The production deployment/runtime after this commit still requires an independent post-deploy check; local validation is not marked as independent verification.

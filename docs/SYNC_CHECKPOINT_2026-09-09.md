@@ -58,3 +58,10 @@ Task `dashboard-story-terminal-visual-rewire-2026-09-09` is `claimed_done` on br
 ## Dashboard cleanup entry — 2026-09-09
 
 Task `dashboard-audit-cleanup-2026-09-09` is `claimed_done` on branch `v0/modern-pro-dark-dashboard`. The writer removed the duplicate fetch helper and client-side page persistence from `dashboard/index.html`; no endpoint, schema, research result, or execution behavior changed. Evidence and verification boundary are recorded in `docs/DASHBOARD_AUDIT_LOG_2026-09-09.md`. Independent browser/runtime verification remains pending.
+
+
+## Owner-first dashboard refresh — 2026-09-09
+
+Task `dashboard-owner-first-total-refresh-2026-09-09` is implemented by Manus in commit `b416ae01fb2e475e85357672b5c141fe46d273b4` and pushed to `main`. The batch changed only `dashboard/index.html`, `landing/index.html`, dashboard contract tests, and a reusable dashboard validator. It did not change Supabase schema/data, research RPCs, experiment results, or execution behavior.
+
+The canonical owner surface is now the root dashboard with Story → Terminal → Visual. Story provides the briefing, Terminal exposes backend-derived research evidence and frozen comparison, and Visual exposes only persisted market observations. The legacy `/lab` entry point redirects to `/`. Local evidence: `53 passed, 2 skipped`; dashboard validator and JavaScript syntax check passed. Independent post-deploy verification remains a separate boundary and must not be inferred from this writer's claim.
