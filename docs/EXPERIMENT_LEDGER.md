@@ -100,11 +100,18 @@ Existing Stage-3 infrastructure was built before Stage-2 proof. Treat it as debt
 
 Existing signal/audit logs should be preserved and never reset merely to make a new experiment cleaner.
 
-## Production archive synchronization — 2026-09-08
+## Production archive synchronization — 2026-09-09
 
-The production Supabase registry contains `fam-swing-v1` and a frozen `H-SW1` row. This database registration is evidence that a hypothesis was registered, not evidence that it passed validation. No `research_*swing*` function exists, and H-SW1 remains **unverified in Git** until its complete specification, invocation, result export, and independent verification are committed.
+The production Supabase registry contains `fam-swing-v1` and a frozen `H-SW1` row. Two separate research RPC lineages are now live and versioned:
 
-The portfolio dashboard is a **Research Archive**. Its live values are observability evidence only. The archive must not present `LONG`, collector health, or any other observed state as profitability, a validated edge, or trading approval. H-FB1 remains **KILL**, the funding family remains **CLOSED**, and execution remains **OFF**.
+- `research_sw1_scan_frozen(text,numeric,numeric,integer)` — **H-SW1-CLAUDE**, the original reference method.
+- `research_sw1_manus_scan_frozen(bigint,numeric,numeric,integer)` — **H-SW1-MANUS**, an independent method with a different candidate grid, funding agreement rule, and period grouping.
+
+The Manus function was applied by migration `20260908025302` and is represented in Git by commit `1153323`. The two methods must not be merged, silently substituted, or reported as mutual confirmation. The live read-only verification recorded in `docs/HSW1_LIVE_VERIFICATION_2026-09-09.md` found both methods **INCONCLUSIVE / NOT PROMOTED** because their overall CI95 intervals cross zero. Neither method is a trading signal.
+
+The portfolio dashboard is a **Research Archive** with three local presentation modes: Terminal, Apple, and Story / Visual. The modes change presentation only; they use the same backend-derived data and do not enable execution. The dashboard commit is `689dcd4`. The archive must not present `LONG`, collector health, or any other observed state as profitability, a validated edge, or trading approval. H-FB1 remains **KILL**, the funding family remains **CLOSED**, H-SW1 remains **INCONCLUSIVE**, and execution remains **OFF**.
+
+The implementation and live verification are now synchronized across Git, Supabase, and this ledger. Any future method with materially different logic must receive a new hypothesis identity and independent frozen specification rather than reusing H-SW1.
 
 ## Hard Stop
 
