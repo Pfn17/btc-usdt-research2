@@ -50,11 +50,3 @@ PRs #1, #2, and #3 remain open on a separate, older Futures L2 collector branch 
 ## Safety boundary
 
 This checkpoint changes documentation only. It does not promote any method, run a new research scan, alter a frozen result, enable paper/live orders, close pull requests, or delete coordination history.
-
-## Dashboard information architecture entry — 2026-09-09
-
-Task `dashboard-story-terminal-visual-rewire-2026-09-09` is `claimed_done` on branch `v0/modern-pro-dark-dashboard`. Story is now the landing page, Terminal is the research evidence surface, Visual is the derived visualization surface, and owner identity/footer copy has been restored. H-SW1 is surfaced in Terminal using only backend-returned values; no schema, endpoint, research result, or execution behavior changed. Independent browser/runtime verification remains pending.
-
-## Dashboard cleanup entry — 2026-09-09
-
-Task `dashboard-audit-cleanup-2026-09-09` is `claimed_done` on branch `v0/modern-pro-dark-dashboard`. The writer removed the duplicate fetch helper and client-side page persistence from `dashboard/index.html`; no endpoint, schema, research result, or execution behavior changed. Evidence and verification boundary are recorded in `docs/DASHBOARD_AUDIT_LOG_2026-09-09.md`. Independent browser/runtime verification remains pending.
