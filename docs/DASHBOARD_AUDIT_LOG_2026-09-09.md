@@ -9,6 +9,15 @@
 - Removed `localStorage` page persistence; navigation now defaults to Overview per page load and keeps state in memory only.
 - Preserved the read-only boundary, existing endpoints, refresh cadence, H-FB1 decision, and H-SW1 frozen comparison path.
 
+## Information architecture rewiring
+
+- Restored `Story` as the first page and landing surface.
+- Renamed `Overview` to `Terminal` in the public navigation.
+- Returned owner identity `@parhanfirdausnugraha` to the header and footer.
+- Surfaced H-SW1 frozen comparison in Terminal with backend-only values and explicit unavailable copy.
+- Kept Visual focused on derived observations and honest insufficient-evidence states.
+- Preserved read-only execution boundary and existing endpoint contract.
+
 ## Verification boundary
 
 - No database, Supabase schema, environment variable, endpoint, research result, or trading behavior was changed.
