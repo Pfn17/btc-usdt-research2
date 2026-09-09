@@ -28,8 +28,8 @@ def test_dashboard_has_real_sw1_bindings_and_no_execution_claim() -> None:
     html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
     assert "/api/v1/research/sw1-manus" in html
     assert "/api/v1/research/sw1-claude" in html
-    assert 'id="sw1ClaudeOverall"' in html
-    assert 'id="sw1ManusOverall"' in html
-    assert "H-SW1-CLAUDE" in html
-    assert "H-SW1-MANUS" in html
+    assert 'id="studyReferenceOverall"' in html
+    assert 'id="studyIndependentOverall"' in html
+    assert "H-SW1-CLAUDE" in html or "sw1-claude" in html
+    assert "H-SW1-MANUS" in html or "sw1-manus" in html
     assert "No exchange orders are sent" in html

@@ -30,19 +30,24 @@ def test_dashboard_is_a_research_archive():
     assert 'class="value observed"' in html
 
 
-def test_dashboard_has_exchange_archive_surface():
+def test_dashboard_has_three_mode_archive_surface():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
     assert "Inter,Arial,Helvetica,sans-serif" in html
     assert "#f0b90b" in html
     assert "#181a20" in html
     assert "Run comparison once" in html
-    assert "Reference specification" in html
-    assert "Independent specification" in html
-    assert "Claude" not in html
-    assert "Manus" not in html
-    assert "SF Pro Display" not in html
-    assert "glow" not in html.lower()
-    assert "gradient" not in html.lower()
+    assert "reference specification" in html
+    assert "independent specification" in html
+    assert "H-SW1-CLAUDE" in html
+    assert "H-SW1-MANUS" in html
+    assert "value=\"terminal\"" in html
+    assert "value=\"apple\"" in html
+    assert "value=\"story\"" in html
+    assert "story-shell" in html
+    assert "renderEVChart" in html
+    assert "renderPriceChart" in html
+    assert "system map" in html.lower()
+    assert "what this system can prove" in html.lower()
     assert "archive-tab" not in html
     assert "evidencePulse" not in html
     assert "telemetry" not in html
