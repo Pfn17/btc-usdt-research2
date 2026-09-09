@@ -1,0 +1,15 @@
+from pathlib import Path
+p=Path(__file__).resolve().parents[1]/'dashboard'/'index.html'
+s=p.read_text(encoding='utf-8')
+old="setHeader(h);$('visualFetched').textContent=now();$('flowApi').textContent='AVAILABLE';$('flowStore').textContent=o.data?.length?'AVAILABLE':'UNAVAILABLE';$('flowArchive').textContent='READ-ONLY';renderChart(o.data||[])"
+new="setHeader(h);$('visualFetched').textContent=now();renderChart(o.data||[])"
+if old not in s: raise SystemExit('M11 chart crash sequence not found')
+s=s.replace(old,new,1)
+old_flow='<div class="section-label">Evidence path</div><div class="flow"><div class="flow-node"><strong>Binance public API</strong><span>MARKET SOURCE</span></div><div class="flow-node"><strong>Collector runtime</strong><span>CAPTURE LAYER · HOST NOT CLAIMED</span></div><div class="flow-node"><strong>Supabase</strong><span>PERSISTED EVIDENCE</span></div><div class="flow-node"><strong>Dashboard</strong><span>READ-ONLY SURFACE</span></div></div>'
+new_flow='''<div class="section-label">Evidence path</div><svg class="system-map" viewBox="0 0 900 150" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Evidence path from Binance public API through collector runtime and Supabase to dashboard"><g fill="none" stroke="var(--line)" stroke-width="2"><path d="M205 75h55M425 75h55M645 75h55"/><path d="M248 68l12 7-12 7M468 68l12 7-12 7M688 68l12 7-12 7"/><rect x="20" y="35" width="185" height="80" rx="6" fill="var(--panel)"/><rect x="260" y="35" width="165" height="80" rx="6" fill="var(--panel)"/><rect x="480" y="35" width="165" height="80" rx="6" fill="var(--panel)"/><rect x="700" y="35" width="180" height="80" rx="6" fill="var(--panel)"/></g><g text-anchor="middle" fill="var(--text)" font-family="var(--mono)"><text x="112" y="68" font-size="13">Binance public API</text><text x="112" y="91" font-size="10" fill="var(--muted)">MARKET SOURCE</text><text x="342" y="68" font-size="13">Collector runtime</text><text x="342" y="91" font-size="10" fill="var(--muted)">CAPTURE LAYER</text><text x="562" y="68" font-size="13">Supabase</text><text x="562" y="91" font-size="10" fill="var(--muted)">PERSISTED EVIDENCE</text><text x="790" y="68" font-size="13">Dashboard</text><text x="790" y="91" font-size="10" fill="var(--muted)">READ-ONLY SURFACE</text></g></svg>'''
+if old_flow not in s: raise SystemExit('M11 flow markup not found')
+s=s.replace(old_flow,new_flow,1)
+s=s.replace('<text class="whisker-text" x="250" y="242">CI / EV scale</text><text class="whisker-text" x="565" y="242">0 bps</text>', '<text class="whisker-text" x="250" y="242">-40 bps</text><text class="whisker-text" x="565" y="242">0 bps</text><text class="whisker-text" x="880" y="242" text-anchor="end">+40 bps</text>')
+s=s.replace('<a href="https://github.com/Pfn17/btc-usdt-research2">GitHub</a> · Research Ledger · Data Policy', '<a href="https://github.com/Pfn17/btc-usdt-research2">GitHub</a> · <a href="https://www.instagram.com/parhanfirdausnugraha/">Instagram</a> · Research Ledger · Data Policy')
+p.write_text(s,encoding='utf-8')
+print('M11 precision fixes applied')
