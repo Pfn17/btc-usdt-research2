@@ -116,3 +116,12 @@ The implementation and live verification are now synchronized across Git, Supaba
 ## Hard Stop
 
 If the current candidate fails its frozen OOS gate, kill it. Do not optimize around the result.
+
+
+## H-FB3 five-gap closure — 2026-09-10
+
+The independent audit of H-FB3 identified two presentation defects and three provenance/governance gaps. The persisted outcome itself is unchanged: `N=2,984`, net EV `-10.118565 bps`, CI95 `[-10.793438, -9.443693] bps`, stress net EV `-12.118565 bps`, status `KILLED`, and trading disabled.
+
+The dashboard now reads the stress value from `evidence.stress_net_bps` and includes H-FB3 as a fourth row in the EV/CI comparison chart. The discarded earlier `N=4,692` run is now retained as an append-only audit trace with its wrong OOS timestamp-window reason; it is not evidence and does not replace the official result. The exact frozen OOS window is reconciled to commit `fd712a286f4ef79476da11dcf985a8650c7008eb`: `2026-08-03T00:00:00Z` through `2026-09-09T23:59:59.999Z`, with query cutoff `2026-09-10T10:18:00Z`.
+
+For future confirmatory families, the project default is now prospective Benjamini–Hochberg FDR at `q=0.05` across a predeclared hypothesis universe, declared before outcomes are opened. Exploratory scans cannot be promoted as confirmatory findings. Each hypothesis must still pass its own frozen economic, confidence, temporal, and cost gates. No retroactive FDR adjustment is applied to H-FB3; it remains an unadjusted pre-registered KILL. No H-FB4 or later confirmatory outcome may be opened without a family registry and FDR declaration. Full evidence is recorded in `docs/H-FB3_AUDIT_ADDENDUM_2026-09-10.md` and `public.agent_coordination_log`.

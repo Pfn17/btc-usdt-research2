@@ -11,18 +11,17 @@ def test_dashboard_asset_exists():
 
 
 def test_dashboard_is_explicitly_read_only():
-    html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
-    assert "READ-ONLY" in html
-    assert "Never inferred" in html
+    html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
+    assert "Research archive. Execution disabled." in html
+    assert "Trading is disabled." in html
     assert "Execution" in html and "OFF" in html
 
 
 def test_dashboard_is_an_owner_first_research_archive():
-    html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
+    html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
     assert "research archive" in html.lower()
-    assert "No validated edge." in html
-    assert "Current position" in html
-    assert "Evidence gate" in html
+    assert "What the research found" in html
+    assert "Decision at zero boundary" in html
     assert "Find edges. Reject noise." not in html
     assert "gradient" not in html.lower()
     assert "Evidence" in html
@@ -30,16 +29,16 @@ def test_dashboard_is_an_owner_first_research_archive():
     assert "Funding follow-sign" in html and "Swing" in html
 
 
-def test_dashboard_has_three_owner_surfaces_and_safe_refresh():
-    html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
+def test_dashboard_has_research_surfaces_and_safe_refresh():
+    html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
     assert "Reference lineage" in html
     assert "Independent lineage" in html
     assert 'id="marketChart"' in html
+    assert 'id="hfb3Status"' in html
     assert "setInterval(loadOperational,15000)" in html
     assert "setInterval(loadResearch,900000)" in html
     assert "Loading current research data" in html
     assert "zero decision boundary" in html
-    assert "System status" in html
     assert "Project memory" not in html
     assert "governance/summary" not in html
     assert "toLocaleString('en-US'" in html
