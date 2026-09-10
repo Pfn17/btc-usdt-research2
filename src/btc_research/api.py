@@ -56,7 +56,7 @@ class LiveAPI:
         rows=await self.db.select("feature_snapshots",f"select=*&symbol=eq.{self.db.config.symbol}&order=event_time_ms.desc&limit=1"); return rows[0] if rows else None
     async def latest_health(self) -> dict[str, Any] | None:
         rows=await self.db.select("collector_health","select=*&order=updated_at.desc&limit=1"); return rows[0] if rows else None
-    async def current_session(self) -> dict[str, Any] | None:
+    async def current_session(self) -> dict[str,Any] | None:
         rows=await self.db.select("research_sessions","select=id,symbol,mode,status,started_at,last_heartbeat_at,stopped_at&status=eq.running&order=last_heartbeat_at.desc&limit=1"); return rows[0] if rows else None
     async def latest_ohlcv(self,limit:int=3)->list[dict[str,Any]]:
         return await self.db.select("ohlcv_1m",f"select=*&symbol=eq.{self.db.config.symbol}&interval=eq.1m&order=open_time_ms.desc&limit={max(1,min(limit,20))}")
@@ -81,6 +81,15 @@ class LiveAPI:
         return await self.db.rpc("research_conditional_alpha_scan",{"p_as_of_event_time_ms":as_of_event_time_ms,"p_horizon_seconds":horizon_seconds,"p_sample_limit":sample_limit,"p_purge_seconds":purge_seconds,"p_embargo_seconds":embargo_seconds,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
     async def hfb1_scan(self,oos_start_ms:int,as_of_event_time_ms:int,fee_bps:float=4.0,slippage_bps:float=1.0)->list[dict[str,Any]]:
         return await self.db.rpc("research_funding_hfb1",{"p_oos_start_ms":oos_start_ms,"p_as_of_event_time_ms":as_of_event_time_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
+    async def hfb3_result(self)->dict[str,Any]|None:
+        runs=await self.db.select("model_runs","select=id,batch_id,model_name,parameters,created_at&model_name=eq.hfb3_frozen_oos_sql&order=created_at.desc&limit=1")
+        if not runs:return None
+        run=runs[0]
+        rows=await self.db.select("research_results",f"select=id,sample_count,expectancy,cost_adjusted_ev,hit_rate,confidence_interval,regime_stability,period_concentration,status,created_at&model_run_id=eq.{run['id']}&order=created_at.desc&limit=1")
+        if not rows:return None
+        result=rows[0]
+        ci=result.get("confidence_interval") or {}
+        return {"status":"RESEARCH_ONLY","research_status":"KILLED" if result.get("status")=="killed" else result.get("status","UNAVAILABLE").upper(),"data":[{"bucket":"overall","n":result.get("sample_count"),"mean_gross_bps":result.get("expectancy"),"mean_net_bps":result.get("cost_adjusted_ev"),"net_ci95_low":ci.get("ci95_low_bps"),"net_ci95_high":ci.get("ci95_high_bps"),"hit_rate":result.get("hit_rate")}],"evidence":{"result_id":result.get("id"),"model_run_id":run.get("id"),"parameters":run.get("parameters"),"regime_stability":result.get("regime_stability"),"period_concentration":result.get("period_concentration"),"created_at":result.get("created_at")},"trading_enabled":False}
     async def sw1_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]:
         return await self.db.rpc("research_sw1_manus_scan_frozen",{"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
     async def sw1_claude_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]:
@@ -89,28 +98,17 @@ class LiveAPI:
     async def live_imbalance_signal(self,sample_limit:int)->list[dict[str,Any]]:
         return await self.db.rpc("research_live_imbalance_signal",{"p_sample_limit":sample_limit})
 
-PUBLIC_AGGREGATE_FIELDS = (
-    "gross_profit", "gross_loss", "net_profit", "closed_observations",
-    "wins", "losses", "win_rate", "average_outcome", "profit_factor",
-    "maximum_drawdown", "status", "trading_enabled",
-)
+PUBLIC_AGGREGATE_FIELDS=("gross_profit","gross_loss","net_profit","closed_observations","wins","losses","win_rate","average_outcome","profit_factor","maximum_drawdown","status","trading_enabled")
 
 def public_aggregate_metrics(row:dict[str,Any]|None)->dict[str,Any]:
-    """Allow only persisted aggregate performance fields into a public view.
-
-    Strategy identity, feature definitions, parameters, direction, timing,
-    rationale, and per-trade evidence are intentionally excluded. Missing
-    persisted metrics remain unavailable rather than being fabricated.
-    """
-    if row is None:
-        return {"status": "UNAVAILABLE", "trading_enabled": False}
-    return {key: row[key] for key in PUBLIC_AGGREGATE_FIELDS if key in row}
+    if row is None:return {"status":"UNAVAILABLE","trading_enabled":False}
+    return {key:row[key] for key in PUBLIC_AGGREGATE_FIELDS if key in row}
 
 def hfb1_research_status(rows:list[dict[str,Any]])->str:
-    row=next((r for r in rows if str(r.get("bucket", "")).lower()=="overall"), None) or (rows[0] if rows else None)
+    row=next((r for r in rows if str(r.get("bucket","")).lower()=="overall"),None) or (rows[0] if rows else None)
     if not row:return "UNAVAILABLE"
-    try: net=float(row["mean_net_bps"]); lo=float(row["net_ci95_low"]); hi=float(row["net_ci95_high"])
-    except (KeyError,TypeError,ValueError): return "UNAVAILABLE"
+    try:net=float(row["mean_net_bps"]);lo=float(row["net_ci95_low"]);hi=float(row["net_ci95_high"])
+    except (KeyError,TypeError,ValueError):return "UNAVAILABLE"
     if net<=0:return "KILLED · NET EV ≤ 0"
     if lo<=0<=hi:return "INCONCLUSIVE · NOT PROMOTED"
     return "PROMOTION ELIGIBLE · REVIEW REQUIRED"
@@ -118,18 +116,18 @@ def hfb1_research_status(rows:list[dict[str,Any]])->str:
 def freshness(row:dict[str,Any]|None)->dict[str,Any]:
     if not row:return {"available":False,"stale":True,"age_ms":None}
     value=row.get("receive_time_ns")
-    if value is not None: age_ms=max(0,time.time_ns()//1_000_000-int(value)//1_000_000)
+    if value is not None:age_ms=max(0,time.time_ns()//1_000_000-int(value)//1_000_000)
     else:
         timestamp=row.get("updated_at") or row.get("created_at") or row.get("collected_at") or row.get("observed_at")
         if not timestamp:return {"available":True,"stale":True,"age_ms":None}
-        parsed=datetime.fromisoformat(str(timestamp).replace("Z","+00:00")); age_ms=max(0,int((datetime.now(timezone.utc)-parsed).total_seconds()*1000))
+        parsed=datetime.fromisoformat(str(timestamp).replace("Z","+00:00"));age_ms=max(0,int((datetime.now(timezone.utc)-parsed).total_seconds()*1000))
     return {"available":True,"stale":age_ms>STALE_AFTER_MS,"age_ms":age_ms}
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
-    config=load_config(); db=SupabaseReadClient(config); app.state.live=LiveAPI(db); app.state.config=config
-    try: yield
-    finally: await db.close()
+    config=load_config();db=SupabaseReadClient(config);app.state.live=LiveAPI(db);app.state.config=config
+    try:yield
+    finally:await db.close()
 
 app=FastAPI(title="BTCUSDT Research API",version="0.6.1",default_response_class=ORJSONResponse,lifespan=lifespan)
 
@@ -146,7 +144,7 @@ async def landing()->FileResponse:
 @app.get("/health")
 async def health()->dict[str,Any]:
     try:
-        session=await app.state.live.current_session(); feature=await app.state.live.latest_feature(); ff=freshness(feature)
+        session=await app.state.live.current_session();feature=await app.state.live.latest_feature();ff=freshness(feature)
         return {"status":"ok" if session and ff["available"] and not ff["stale"] else "degraded","symbol":app.state.config.symbol,"collector_session":session,"feature_freshness":ff}
     except Exception as exc:raise HTTPException(status_code=503,detail="live data unavailable") from exc
 
@@ -191,9 +189,7 @@ async def signals_log(limit:int=Query(50,ge=1,le=200))->dict[str,Any]:
 
 @app.get("/api/v1/signal/history")
 async def signal_history(limit:int=Query(50,ge=1,le=200),since_event_time_ms:int|None=Query(None,ge=0))->dict[str,Any]:
-    """Read-only event history for operators who were not watching the dashboard."""
-    try:
-        rows=await app.state.live.signal_history(limit,since_event_time_ms)
+    try:rows=await app.state.live.signal_history(limit,since_event_time_ms)
     except Exception as exc:raise HTTPException(status_code=503,detail="signal history unavailable") from exc
     return {"data":rows,"count":len(rows),"unseen_count":len(rows) if since_event_time_ms is not None else 0,"last_event":rows[0] if rows else None,"source":"H-FB1","read_only":True}
 
@@ -205,8 +201,7 @@ async def governance_summary()->dict[str,Any]:
 
 @app.get("/api/v1/observability/verification")
 async def observability_verification()->dict[str,Any]:
-    try:
-        rows=await app.state.live.coordination_status()
+    try:rows=await app.state.live.coordination_status()
     except Exception as exc:raise HTTPException(status_code=503,detail="verification state unavailable") from exc
     return {"data":rows[0] if rows else None,"runtime_status":"AVAILABLE" if rows else "UNAVAILABLE","read_only":True}
 
@@ -215,7 +210,7 @@ async def hfb1_current()->dict[str,Any]:
     try:
         event=await app.state.live.latest_funding_event()
         if not event:return {"status":"NO_DATA","signal":"NONE","trading_enabled":False}
-        rate=float(event["funding_rate"]); direction="LONG" if rate>0 else "SHORT" if rate<0 else "NONE"; ft=int(event["funding_time_ms"]); mt=ft+240*60*1000
+        rate=float(event["funding_rate"]);direction="LONG" if rate>0 else "SHORT" if rate<0 else "NONE";ft=int(event["funding_time_ms"]);mt=ft+240*60*1000
         return {"status":"OBSERVED","signal":direction,"funding_rate":event["funding_rate"],"funding_time_ms":ft,"maturity_time_ms":mt,"matured":int(time.time()*1000)>=mt,"trading_enabled":False,"method":"H-FB1 funding-rate sign at completed funding event"}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-FB1 live signal unavailable") from exc
 
@@ -224,26 +219,30 @@ async def research_hfb1(oos_start_ms:int|None=Query(None,ge=0),fee_bps:float=Que
     try:
         latest=await app.state.live.latest_funding_event()
         if not latest:return {"status":"NO_DATA","data":[],"trading_enabled":False}
-        as_of=int(latest["funding_time_ms"]); start=oos_start_ms if oos_start_ms is not None else as_of-90*86_400_000
+        as_of=int(latest["funding_time_ms"]);start=oos_start_ms if oos_start_ms is not None else as_of-90*86_400_000
         rows=await app.state.live.hfb1_scan(start,as_of,fee_bps,slippage_bps)
         return {"status":"RESEARCH_ONLY","research_status":hfb1_research_status(rows),"decision_source":"backend","data":rows,"parameters":{"oos_start_ms":start,"as_of_event_time_ms":as_of,"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps,"horizon_minutes":240},"trading_enabled":False}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-FB1 research unavailable") from exc
 
+@app.get("/api/v1/research/hfb3")
+async def research_hfb3()->dict[str,Any]:
+    try:
+        result=await app.state.live.hfb3_result()
+    except Exception as exc:raise HTTPException(status_code=503,detail="H-FB3 research unavailable") from exc
+    if result is None:return {"status":"UNAVAILABLE","data":[],"trading_enabled":False}
+    return result
+
 @app.get("/api/v1/research/sw1-manus")
 async def research_sw1_manus()->dict[str,Any]:
     try:
-        latest=await app.state.live.latest_ohlcv(1)
-        as_of_ms=int(latest[0]["open_time_ms"]) if latest else None
-        rows=await app.state.live.sw1_scan(as_of_ms,4.0,1.0,3)
+        latest=await app.state.live.latest_ohlcv(1);as_of_ms=int(latest[0]["open_time_ms"]) if latest else None;rows=await app.state.live.sw1_scan(as_of_ms,4.0,1.0,3)
         return {"status":"RESEARCH_ONLY","method":"H-SW1-MANUS","data":rows,"parameters":{"as_of_ms":as_of_ms,"fee_bps_per_side":4.0,"slippage_bps_per_side":1.0,"funding_lookback_events":3,"horizon_hours":24},"trading_enabled":False,"research_status":"independent_method_unverified"}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-SW1-MANUS research unavailable") from exc
 
 @app.get("/api/v1/research/sw1-claude")
 async def research_sw1_claude()->dict[str,Any]:
     try:
-        latest=await app.state.live.latest_ohlcv(1)
-        as_of_ms=int(latest[0]["open_time_ms"]) if latest else None
-        rows=await app.state.live.sw1_claude_scan(as_of_ms,4.0,1.0,3)
+        latest=await app.state.live.latest_ohlcv(1);as_of_ms=int(latest[0]["open_time_ms"]) if latest else None;rows=await app.state.live.sw1_claude_scan(as_of_ms,4.0,1.0,3)
         return {"status":"RESEARCH_ONLY","method":"H-SW1-CLAUDE","data":rows,"parameters":{"as_of_ms":as_of_ms,"fee_bps_per_side":4.0,"slippage_bps_per_side":1.0,"funding_lookback_events":3,"horizon_hours":24},"trading_enabled":False,"research_status":"official_result_requires_independent_verification"}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-SW1-CLAUDE research unavailable") from exc
 
@@ -262,7 +261,7 @@ async def research_wfo(horizon_seconds:int=Query(60,ge=60,le=300),sample_limit:i
     cutoff=int(latest["event_time_ms"])
     try:folds=await app.state.live.wfo_scan(cutoff,horizon_seconds,sample_limit,purge_seconds,embargo_seconds,fee_bps,slippage_bps)
     except Exception as exc:raise HTTPException(status_code=503,detail="WFO scan unavailable") from exc
-    positive=sum(1 for r in folds if float(r.get("combined_net_ev_bps",0))>0 and float(r.get("ci95_low",0))>0); gate=bool(folds) and positive==len(folds) and sum(int(r.get("combined_n",0)) for r in folds)>=5000
+    positive=sum(1 for r in folds if float(r.get("combined_net_ev_bps",0))>0 and float(r.get("ci95_low",0))>0);gate=bool(folds) and positive==len(folds) and sum(int(r.get("combined_n",0)) for r in folds)>=5000
     return {"status":"PAPER_CANDIDATE" if gate else "NO_SIGNAL","gate":{"all_folds_positive_and_ci95":gate,"positive_folds":positive,"folds":len(folds),"min_effective_samples":5000},"parameters":{"cutoff_event_time_ms":cutoff,"horizon_seconds":horizon_seconds,"sample_limit":sample_limit,"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps,"purge_seconds":purge_seconds,"embargo_seconds":embargo_seconds},"folds":folds,"limitations":["baseline imbalance_1 quantile rule only","no block bootstrap/FDR in this gate yet","no executable L2 impact model","paper signal only; live trading remains disabled"]}
 
 @app.get("/api/v1/research/conditional-alpha")
@@ -285,22 +284,22 @@ async def research_ohlcv_scan(lookback_minutes:int=Query(60,ge=1,le=1440),horizo
 @app.get("/api/v1/signal/current")
 async def current_signal(fee_bps:float=Query(4.0,ge=0,le=100),slippage_bps:float=Query(0.0,ge=0,le=100))->dict[str,Any]:
     try:
-        candidate=(await app.state.live.live_imbalance_signal(50000) or [None])[0]; latest=await app.state.live.latest_feature()
+        candidate=(await app.state.live.live_imbalance_signal(50000) or [None])[0];latest=await app.state.live.latest_feature()
         if not candidate or not latest:return {"signal":"NONE","reason":"no live feature data"}
-        cutoff=int(latest["event_time_ms"]); folds=await app.state.live.wfo_scan(cutoff,60,50000,60,60,fee_bps,slippage_bps); gate=bool(folds) and all(float(r.get("combined_net_ev_bps",0))>0 and float(r.get("ci95_low",0))>0 for r in folds); direction=candidate["candidate_direction"] if gate else "NONE"
+        cutoff=int(latest["event_time_ms"]);folds=await app.state.live.wfo_scan(cutoff,60,50000,60,60,fee_bps,slippage_bps);gate=bool(folds) and all(float(r.get("combined_net_ev_bps",0))>0 and float(r.get("ci95_low",0))>0 for r in folds);direction=candidate["candidate_direction"] if gate else "NONE"
         return {"signal":direction,"status":"PAPER_CANDIDATE" if direction!="NONE" else "NO_SIGNAL","feature":{"imbalance_1":candidate["imbalance_1"],"q20":candidate["q20"],"q80":candidate["q80"],"event_time_ms":candidate["event_time_ms"]},"cost":{"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps},"gate":{"all_oos_folds_positive_ci95":gate,"folds":folds},"trading_enabled":False}
     except Exception as exc:raise HTTPException(status_code=503,detail="signal engine unavailable") from exc
 
 @app.websocket("/ws/features")
 async def websocket_features(websocket:WebSocket)->None:
-    await websocket.accept(); last_key:tuple[Any,Any]|None=None
+    await websocket.accept();last_key:tuple[Any,Any]|None=None
     try:
         while True:
             try:row=await app.state.live.latest_feature()
-            except Exception:await websocket.send_json({"type":"status","status":"degraded","reason":"feature_store_unavailable"}); await asyncio.sleep(WS_POLL_SECONDS); continue
+            except Exception:await websocket.send_json({"type":"status","status":"degraded","reason":"feature_store_unavailable"});await asyncio.sleep(WS_POLL_SECONDS);continue
             if row is None:await websocket.send_json({"type":"status","status":"no_data"})
             else:
                 key=(row.get("event_time_ms"),row.get("book_update_id"))
-                if key!=last_key:await websocket.send_json({"type":"feature","data":row,"freshness":freshness(row)}); last_key=key
+                if key!=last_key:await websocket.send_json({"type":"feature","data":row,"freshness":freshness(row)});last_key=key
             await asyncio.sleep(WS_POLL_SECONDS)
     except (WebSocketDisconnect,asyncio.CancelledError):return
