@@ -22,6 +22,7 @@ def test_dashboard_is_an_owner_first_research_archive():
     assert "research archive" in html.lower()
     assert "No validated edge." in html
     assert "Current position" in html
+    assert "Evidence gate" in html
     assert "Find edges. Reject noise." not in html
     assert "gradient" not in html.lower()
     assert "Evidence you can inspect" in html
@@ -31,14 +32,16 @@ def test_dashboard_is_an_owner_first_research_archive():
 
 def test_dashboard_has_three_owner_surfaces_and_safe_refresh():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
-    assert "Reference study" in html
-    assert "Independent study" in html
+    assert "Reference lineage" in html
+    assert "Independent lineage" in html
     assert 'id="marketChart"' in html
     assert "setInterval(loadOperational,15000)" in html
     assert "setInterval(loadResearch,900000)" in html
     assert "Loading current research data" in html
     assert "zero decision boundary" in html
-    assert "governance/summary" in html
+    assert "System state and provenance" in html
+    assert "Project memory" not in html
+    assert "governance/summary" not in html
     assert "toLocaleString('en-US'" in html
     assert "radial-gradient" not in html
     assert "linear-gradient" not in html

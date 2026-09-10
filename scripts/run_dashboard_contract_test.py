@@ -9,8 +9,8 @@ checks = {
     'no_research_in_operational_batch': 'async function loadOperational' in html and "safe('/api/v1/research/hfb1')" not in html.split('async function loadOperational', 1)[1].split('async function loadResearch', 1)[0],
     'no_fabricated_fallback': 'Never inferred' in html,
     'unavailable_state': 'UNAVAILABLE' in html and 'STALE' in html,
-    'governance_endpoint': '/api/v1/governance/summary' in html,
-    'lineage_labels': 'Reference study' in html and 'Independent study' in html,
+    'no_governance_surface': '/api/v1/governance/summary' not in html and 'Project memory' not in html,
+    'lineage_labels': 'Reference lineage' in html and 'Independent lineage' in html,
     'archive_identity': 'Research Archive' in html,
 }
 for name, ok in checks.items():

@@ -30,7 +30,7 @@ def test_dashboard_has_real_sw1_bindings_and_no_execution_claim() -> None:
     assert "/api/v1/research/sw1-claude" in html
     assert 'id="sw1RefN"' in html
     assert 'id="sw1IndN"' in html
-    assert "Reference study" in html
-    assert "Independent study" in html
+    assert "Reference lineage" in html
+    assert "Independent lineage" in html
     assert "Never inferred" in html
     assert "Execution" in html and "OFF" in html

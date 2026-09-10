@@ -18,10 +18,12 @@ def test_owner_visibility_and_no_fabrication_boundary():
     assert "Never inferred" in HTML
     assert "Execution" in HTML and "OFF" in HTML
     assert "Some current data could not be retrieved" in HTML
-    assert "Research archive" in HTML
+    assert "RESEARCH ARCHIVE" in HTML
     assert "UNAVAILABLE" in HTML
     assert "STALE" in HTML
-    assert "/api/v1/governance/summary" in HTML
-    assert "Reference study" in HTML
-    assert "Independent study" in HTML
+    assert "/api/v1/governance/summary" not in HTML
+    assert "Reference lineage" in HTML
+    assert "Independent lineage" in HTML
     assert "Loading current research data" in HTML
+    assert "Project memory" not in HTML
+    assert "Owner direction" not in HTML
