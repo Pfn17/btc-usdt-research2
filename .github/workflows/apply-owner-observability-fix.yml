@@ -1,0 +1,55 @@
+name: apply-owner-observability-fix
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-owner-observability-fix.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    if: "!contains(github.event.head_commit.message, '[skip-owner-fix]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch dashboard truth states
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('dashboard/index.html')
+          s=p.read_text()
+          s=s.replace('.page-nav{max-width:var(--max);margin:auto;padding:0 16px;display:flex;gap:3px;overflow:auto;border-bottom:1px solid var(--line)}.page-nav a{color:var(--muted);text-decoration:none;padding:10px 11px;font:700 10px var(--mono);white-space:nowrap}.page-nav a:hover{color:var(--text);background:var(--panel2)}','')
+          s=s.replace('.page-nav{padding:0 24px}.page-nav a{padding:11px 15px}','')
+          s=s.replace('<strong class="bad">KILL · FUNDING FAMILY CLOSED</strong><br><span class="meta">The result did not support promotion after cost adjustment. The current result is an archive record, not a signal.</span>','<strong id="hfbStatus" class="bad">UNAVAILABLE</strong><br><span id="hfbStatusDetail" class="meta">Reading persisted result…</span>')
+          s=s.replace('<strong class="warn">INCONCLUSIVE · NOT PROMOTED</strong><br><span class="meta">The two frozen method lineages remain separate. A point estimate is not a validated edge while the confidence interval crosses zero.</span>','<strong id="sw1OverallStatus" class="warn">UNAVAILABLE</strong><br><span class="meta">Claude/reference and Manus/independent are separate frozen lineages. Runtime availability is distinct from research outcome.</span>')
+          s=s.replace('<tr><td>Reference specification</td><td class="state warn">INCONCLUSIVE</td><td id="sw1RefN" class="num">UNAVAILABLE</td><td id="sw1RefNet" class="num">UNAVAILABLE</td><td id="sw1RefCI" class="num">UNAVAILABLE</td></tr><tr><td>Independent specification</td><td class="state warn">INCONCLUSIVE</td><td id="sw1IndN" class="num">UNAVAILABLE</td><td id="sw1IndNet" class="num">UNAVAILABLE</td><td id="sw1IndCI" class="num">UNAVAILABLE</td></tr>','<tr><td>Claude · reference specification</td><td id="sw1RefRuntime" class="state">UNAVAILABLE</td><td id="sw1RefStatus" class="state">UNAVAILABLE</td><td id="sw1RefN" class="num">UNAVAILABLE</td><td id="sw1RefNet" class="num">UNAVAILABLE</td><td id="sw1RefCI" class="num">UNAVAILABLE</td></tr><tr><td>Manus · independent specification</td><td id="sw1IndRuntime" class="state">UNAVAILABLE</td><td id="sw1IndStatus" class="state">UNAVAILABLE</td><td id="sw1IndN" class="num">UNAVAILABLE</td><td id="sw1IndNet" class="num">UNAVAILABLE</td><td id="sw1IndCI" class="num">UNAVAILABLE</td></tr>')
+          s=s.replace('<th>Method</th><th>Status</th><th>Sample</th><th>Net EV</th><th>CI95</th>','<th>Method / provenance</th><th>Runtime</th><th>Research status</th><th>Sample</th><th>Net EV</th><th>CI95</th>')
+          s=s.replace('<div class="row"><span>Result provenance</span><strong>Backend-derived only</strong></div>','<div class="row"><span>Result provenance</span><strong>Backend-derived only</strong></div><div class="row"><span>Verification state</span><strong id="verificationState">UNVERIFIED</strong></div>')
+          s=s.replace("function resultRow(payload){return(payload?.data||[]).find(x=>String(x.bucket||'').toLowerCase()==='overall')||(payload?.data||[])[0]||null}","function resultRow(payload){return(payload?.data||[]).find(x=>String(x.bucket||'').toLowerCase()==='overall')||(payload?.data||[])[0]||null}function payloadStatus(payload){return payload?.research_status||payload?.status||resultRow(payload)?.research_status||resultRow(payload)?.status||null}")
+          old="$('ohlcvState').textContent=o.data?.length?'AVAILABLE':'UNAVAILABLE';$('fundingState').textContent=f?.data?'AVAILABLE':'UNAVAILABLE';"
+          new="const fs=f?.data?.status||f?.data?.freshness_status||f?.status||null;$('ohlcvState').textContent=o.data?.length?'AVAILABLE':'UNAVAILABLE';$('fundingState').textContent=fs==='STALE'?'STALE':f?.data?'AVAILABLE':'UNAVAILABLE';"
+          s=s.replace(old,new)
+          s=s.replace("renderResult('hfb',r);renderWhiskers()","renderResult('hfb',r);const hs=payloadStatus(r);$('hfbStatus').textContent=hs||'UNAVAILABLE';$('hfbStatusDetail').textContent=hs?'Backend research status · no promotion implied':'Research result unavailable · no value fabricated';renderWhiskers()")
+          old2="async function loadFrozen(){const st=$('sw1RunStatus');st.textContent='Reading persisted frozen results…';try{const [a,b]=await Promise.all([get('/api/v1/research/sw1-claude'),get('/api/v1/research/sw1-manus')]);researchPayloads.sw1Ref=a;researchPayloads.sw1Ind=b;renderResult('sw1Ref',a);renderResult('sw1Ind',b);renderWhiskers();st.textContent='Comparison complete · read-only · no execution'}catch(e){st.textContent='Result unavailable · no value fabricated'}}"
+          new2="function resetSw1(){['sw1RefRuntime','sw1RefStatus','sw1RefN','sw1RefNet','sw1RefCI','sw1IndRuntime','sw1IndStatus','sw1IndN','sw1IndNet','sw1IndCI'].forEach(id=>$(id).textContent='UNAVAILABLE');$('sw1OverallStatus').textContent='UNAVAILABLE';$('sw1RunStatus').textContent='Reading persisted frozen results…';$('verificationState').textContent='UNVERIFIED'}function renderSw1Line(prefix,payload){$(prefix+'Runtime').textContent=payload?'AVAILABLE':'UNAVAILABLE';$(prefix+'Status').textContent=payloadStatus(payload)||'UNAVAILABLE';renderResult(prefix,payload)}async function loadFrozen(){resetSw1();try{const [a,b]=await Promise.all([get('/api/v1/research/sw1-claude'),get('/api/v1/research/sw1-manus')]);researchPayloads.sw1Ref=a;researchPayloads.sw1Ind=b;renderSw1Line('sw1Ref',a);renderSw1Line('sw1Ind',b);const sa=payloadStatus(a),sb=payloadStatus(b);$('sw1OverallStatus').textContent=(sa&&sb)?'INCONCLUSIVE · NOT PROMOTED':'UNAVAILABLE';$('sw1RunStatus').textContent=(sa&&sb)?'Both frozen lineages returned · provenance preserved':'One or more frozen lineages unavailable · no result inferred';$('verificationState').textContent='UNVERIFIED';renderWhiskers()}catch(e){$('sw1RunStatus').textContent='UNAVAILABLE · frozen comparison could not be read';$('sw1OverallStatus').textContent='UNAVAILABLE';$('verificationState').textContent='UNVERIFIED';renderWhiskers()}}"
+          if old2 not in s:
+              raise SystemExit('expected loadFrozen block not found; aborting')
+          s=s.replace(old2,new2)
+          p.write_text(s)
+          PY
+      - name: Validate and commit
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('dashboard/index.html').read_text()
+          assert '.page-nav{' not in s
+          assert "fs==='STALE'?'STALE'" in s
+          assert 'payloadStatus(payload)' in s
+          assert 'UNAVAILABLE · frozen comparison could not be read' in s
+          print('dashboard owner-observability assertions: PASS')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dashboard/index.html
+          git rm .github/workflows/apply-owner-observability-fix.yml
+          git commit -m 'fix: surface truthful owner observability states [skip-owner-fix]'
+          git push
