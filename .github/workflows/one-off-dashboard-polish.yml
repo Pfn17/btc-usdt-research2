@@ -1,0 +1,89 @@
+name: one-off-dashboard-polish
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.event.head_commit.message != 'chore: remove one-off dashboard polish workflow'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply owner dashboard polish
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('dashboard/index.html')
+          s=p.read_text()
+
+          # Remove the explanatory tutorial block; the metrics and decision text are sufficient.
+          s,n=re.subn(r'<div class="interpret">.*?</div></div>\n</section>', '</section>', s, count=1, flags=re.S)
+          if n != 1: raise SystemExit('interpretation block not found')
+
+          # Visible copy: concise research-instrument language. Keep implementation details out of the owner surface.
+          reps={
+            '<br>READ-ONLY':'',
+            'Frozen research results, current market observations, and system status from the read-only archive.':'Frozen research results, current market observations, and system status.',
+            'Read-only archive. Trading remains disabled.':'Trading is disabled.',
+            'Execution is a separate system boundary, not a dashboard function.':'Execution is disabled and outside the research surface.',
+            'Live observations are being retrieved. Initial values may take a moment.':'Reading current observations.',
+            'Updated from the read-only backend.':'Research data updated.',
+            'Some data could not be retrieved. Affected fields are marked unavailable.':'Some data could not be retrieved. Affected fields are marked unavailable.',
+            'Result provenance':'Result source',
+            '<strong>Backend-derived evidence.</strong>':'<strong>Research record.</strong>',
+            '<strong>Read-only research archive. No execution.</strong>':'<strong>Research archive. Execution disabled.</strong>',
+            'BACKEND RESPONSE':'OBSERVATIONS AVAILABLE',
+            'READ-ONLY PRESENTATION':'ARCHIVED RESULT',
+            'Read-only archive · backend-derived evidence.':'Research archive · recorded evidence.',
+          }
+          for a,b in reps.items(): s=s.replace(a,b)
+
+          # Remove unused tutorial CSS.
+          s=re.sub(r'\.interpret\{.*?\.interpret-step p\{[^}]*\}', '', s, count=1)
+
+          # Mobile evidence path: cards stack vertically and arrows become part of the vertical flow,
+          # rather than occupying a separate side column.
+          s=s.replace('.flow-arrow{color:var(--faint);font:15px var(--mono)}', '.flow-arrow{color:var(--faint);font:15px var(--mono)}')
+          old='@media(max-width:699px){main{padding:0 14px 56px}.section{padding:48px 0}.hero{padding:54px 0 42px}.hero h1{font-size:clamp(49px,15vw,72px)}.hero-lead{font-size:13px}.hero-grid,.decision-grid,.lineage-grid,.audit-grid,.evidence-top,.interpret-grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.metric.wide{grid-column:1/-1}.lineage-metrics{grid-template-columns:1fr 1fr}.ev-row{grid-template-columns:1fr;gap:4px;padding:16px 0}.ev-track{height:38px}.ev-value{text-align:left}.ev-axis{margin-left:0;margin-right:0}.flow{grid-template-columns:1fr}.flow-arrow{text-align:center}.top{padding:11px 13px}.brand-sub{max-width:185px}.clock{font-size:8px}.section-title{font-size:30px}.research-card{padding:18px}.research-head{display:block}.state-pill{display:inline-block;margin-top:11px}.hero-card .value{font-size:23px}}'
+          new='@media(max-width:699px){main{padding:0 14px 56px}.section{padding:48px 0}.hero{padding:54px 0 42px}.hero h1{font-size:clamp(49px,15vw,72px)}.hero-lead{font-size:13px}.hero-grid,.decision-grid,.lineage-grid,.audit-grid,.evidence-top{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.metric.wide{grid-column:1/-1}.lineage-metrics{grid-template-columns:1fr 1fr}.ev-row{grid-template-columns:1fr;gap:6px;padding:16px 0}.ev-track{height:38px}.ev-value{text-align:left}.ev-axis{margin-left:0;margin-right:0}.flow{grid-template-columns:1fr;gap:0}.flow-arrow{display:none}.flow-node{min-height:0;margin-bottom:28px;position:relative}.flow-node:not(:last-child)::after{content:"↓";position:absolute;left:50%;bottom:-24px;transform:translateX(-50%);color:var(--faint);font:15px var(--mono)}.top{padding:11px 13px}.brand-sub{max-width:185px}.clock{font-size:8px}.section-title{font-size:30px}.research-card{padding:18px}.research-head{display:block}.state-pill{display:inline-block;margin-top:11px}.hero-card .value{font-size:23px}}'
+          if old not in s: raise SystemExit('mobile media block not found')
+          s=s.replace(old,new,1)
+
+          # EV/CI visualization: zero is data-dependent, not the geometric center.
+          s=s.replace('<div class="ev-axis"><span id="evLow">—</span><span>0 bps</span><span id="evHigh">—</span></div>', '<div class="ev-axis"><span id="evLow">—</span><span id="evZeroLabel">0 bps</span><span id="evHigh">—</span></div>')
+          oldfn="function renderEv(){const items=[['hfbRange','hfbPoint','hfbEvLabel',data.hfb],['refRange','refPoint','refEvLabel',data.ref],['indRange','indPoint','indEvLabel',data.ind]];const vals=[];items.forEach(([rid,pid,lid,p])=>{const x=row(p);if(x?.net_ci95_low!=null&&x?.net_ci95_high!=null){vals.push(Number(x.net_ci95_low),Number(x.net_ci95_high),Number(x.mean_net_bps));}});if(!vals.length)return;let lo=Math.min(...vals),hi=Math.max(...vals),pad=Math.max(4,(hi-lo)*.08);lo-=pad;hi+=pad;set('evLow',fmt(lo,1)+' bps');set('evHigh',fmt(hi,1)+' bps');const pos=v=>Math.max(1,Math.min(99,(Number(v)-lo)/(hi-lo)*100));items.forEach(([rid,pid,lid,p])=>{const x=row(p),range=$(rid),point=$(pid);if(!x||x.net_ci95_low==null||x.net_ci95_high==null||x.mean_net_bps==null){if(range)range.style.display='none';if(point)point.style.display='none';set(lid,'UNAVAILABLE');return}const a=pos(x.net_ci95_low),b=pos(x.net_ci95_high),m=pos(x.mean_net_bps);range.style.display='block';point.style.display='block';range.style.left=a+'%';range.style.width=(b-a)+'%';point.style.left=m+'%';set(lid,fmt(x.mean_net_bps)+' bps · '+fmt(x.net_ci95_low)+' → '+fmt(x.net_ci95_high));})}"
+          newfn="function renderEv(){const items=[['hfbRange','hfbPoint','hfbEvLabel',data.hfb],['refRange','refPoint','refEvLabel',data.ref],['indRange','indPoint','indEvLabel',data.ind]];const vals=[];items.forEach(([rid,pid,lid,p])=>{const x=row(p);if(x?.net_ci95_low!=null&&x?.net_ci95_high!=null){vals.push(Number(x.net_ci95_low),Number(x.net_ci95_high),Number(x.mean_net_bps));}});if(!vals.length)return;let lo=Math.min(...vals),hi=Math.max(...vals),pad=Math.max(4,(hi-lo)*.08);lo-=pad;hi+=pad;set('evLow',fmt(lo,1)+' bps');set('evHigh',fmt(hi,1)+' bps');const pos=v=>Math.max(1,Math.min(99,(Number(v)-lo)/(hi-lo)*100));const zeroPos=pos(0);document.querySelectorAll('.ev-zero').forEach(el=>el.style.left=zeroPos+'%');const zeroLabel=$('evZeroLabel');if(zeroLabel){zeroLabel.style.position='absolute';zeroLabel.style.left=zeroPos+'%';zeroLabel.style.transform='translateX(-50%)';}items.forEach(([rid,pid,lid,p])=>{const x=row(p),range=$(rid),point=$(pid);if(!x||x.net_ci95_low==null||x.net_ci95_high==null||x.mean_net_bps==null){if(range)range.style.display='none';if(point)point.style.display='none';set(lid,'UNAVAILABLE');return}const a=pos(x.net_ci95_low),b=pos(x.net_ci95_high),m=pos(x.mean_net_bps);range.style.display='block';point.style.display='block';range.style.left=a+'%';range.style.width=Math.max(1,b-a)+'%';point.style.left=m+'%';set(lid,fmt(x.mean_net_bps)+' bps · '+fmt(x.net_ci95_low)+' → '+fmt(x.net_ci95_high));})}"
+          if oldfn not in s: raise SystemExit('renderEv function not found')
+          s=s.replace(oldfn,newfn,1)
+
+          # Axis needs a positioning context for the true zero label.
+          s=s.replace('.ev-axis{display:grid;grid-template-columns:1fr 1fr 1fr;', '.ev-axis{position:relative;display:grid;grid-template-columns:1fr 1fr 1fr;')
+          p.write_text(s)
+          PY
+      - name: Validate
+        run: |
+          python3 -m py_compile src/btc_research/api.py
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('dashboard/index.html').read_text()
+          for bad in ['How to read these results','Owner view','OWNER VIEW','BACKEND RESPONSE','READ-ONLY','read-only','backend','Claude','Manus']:
+              assert bad not in s, bad
+          assert 'id="evZeroLabel"' in s
+          assert 'document.querySelectorAll(\'.ev-zero\')' in s
+          assert 'flow-node:not(:last-child)::after' in s
+          print('dashboard polish validation passed')
+          PY
+          git diff --check
+      - name: Commit and remove workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dashboard/index.html
+          git commit -m 'fix: simplify dashboard copy and normalize mobile evidence'
+          rm .github/workflows/one-off-dashboard-polish.yml
+          git add .github/workflows/one-off-dashboard-polish.yml
+          git commit -m 'chore: remove one-off dashboard polish workflow'
+          git push
