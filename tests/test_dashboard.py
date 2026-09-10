@@ -34,13 +34,11 @@ def test_dashboard_is_an_owner_first_research_archive():
 
 def test_dashboard_has_three_owner_surfaces_and_safe_refresh():
     html = (ROOT / "dashboard" / "index.html").read_text(encoding="utf-8")
-    assert "Reference specification" in html
-    assert "Independent specification" in html
-    assert 'data-page="story"' in html
-    assert 'data-page="terminal"' in html
-    assert 'data-page="visual"' in html
+    assert "Claude · reference specification" in html
+    assert "Manus · independent specification" in html
     assert 'id="marketChart"' in html
-    assert "activePage==='terminal'?15000:300000" in html
+    assert "setInterval(loadTerminal,15000)" in html
+    assert "setInterval(()=>{loadStory();loadVisual();loadFrozen()},900000)" in html
     assert "toLocaleString('en-US'" in html
     assert "radial-gradient" not in html
     assert "linear-gradient" not in html

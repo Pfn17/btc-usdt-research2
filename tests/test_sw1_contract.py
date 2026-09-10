@@ -30,7 +30,7 @@ def test_dashboard_has_real_sw1_bindings_and_no_execution_claim() -> None:
     assert "/api/v1/research/sw1-claude" in html
     assert 'id="sw1RefN"' in html
     assert 'id="sw1IndN"' in html
-    assert "Reference specification" in html
-    assert "Independent specification" in html
+    assert "Claude · reference specification" in html
+    assert "Manus · independent specification" in html
     assert "No value fabricated" in html
     assert "Execution" in html and "OFF" in html
