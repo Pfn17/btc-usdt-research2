@@ -49,34 +49,28 @@ class LiveAPI:
     def __init__(self, db: SupabaseReadClient) -> None: self.db = db
     async def latest_feature(self) -> dict[str, Any] | None:
         rows=await self.db.select("feature_snapshots",f"select=*&symbol=eq.{self.db.config.symbol}&order=event_time_ms.desc&limit=1"); return rows[0] if rows else None
-    async def latest_health(self) -> dict[str, Any] | None:
+    async def latest_health(self) -> dict[str,Any] | None:
         rows=await self.db.select("collector_health","select=*&order=updated_at.desc&limit=1"); return rows[0] if rows else None
     async def current_session(self) -> dict[str,Any] | None:
         rows=await self.db.select("research_sessions","select=id,symbol,mode,status,started_at,last_heartbeat_at,stopped_at&status=eq.running&order=last_heartbeat_at.desc&limit=1"); return rows[0] if rows else None
-    async def latest_ohlcv(self,limit:int=3)->list[dict[str,Any]]:
-        return await self.db.select("ohlcv_1m",f"select=*&symbol=eq.{self.db.config.symbol}&interval=eq.1m&order=open_time_ms.desc&limit={max(1,min(limit,20))}")
+    async def latest_ohlcv(self,limit:int=3)->list[dict[str,Any]]: return await self.db.select("ohlcv_1m",f"select=*&symbol=eq.{self.db.config.symbol}&interval=eq.1m&order=open_time_ms.desc&limit={max(1,min(limit,20))}")
     async def latest_funding_event(self)->dict[str,Any]|None:
         rows=await self.db.select("funding_rate_events",f"select=*&symbol=eq.{self.db.config.symbol}&order=funding_time_ms.desc&limit=1"); return rows[0] if rows else None
-    async def signal_audit_events(self,limit:int=50)->list[dict[str,Any]]:
-        return await self.db.select("signal_audit_events",f"select=id,session_id,event_time_ms,observed_at,status,direction,source,rationale,gate_json,feature_json&source=eq.H-FB1&order=event_time_ms.desc&limit={max(1,min(limit,200))}")
+    async def signal_audit_events(self,limit:int=50)->list[dict[str,Any]]: return await self.db.select("signal_audit_events",f"select=id,session_id,event_time_ms,observed_at,status,direction,source,rationale,gate_json,feature_json&source=eq.H-FB1&order=event_time_ms.desc&limit={max(1,min(limit,200))}")
     async def signal_history(self,limit:int=50,since_event_time_ms:int|None=None)->list[dict[str,Any]]:
-        since=f"&event_time_ms=gt.{since_event_time_ms}" if since_event_time_ms is not None else ""
-        return await self.db.select("signal_audit_events",f"select=id,session_id,event_time_ms,observed_at,status,direction,source,rationale,gate_json,feature_json&source=eq.H-FB1{since}&order=event_time_ms.desc&limit={max(1,min(limit,200))}")
-    async def coordination_status(self)->list[dict[str,Any]]:
-        return await self.db.select("agent_coordination_log", "select=task_id,status,claim,commit_sha,verified_by,verified_at,updated_at,next_action&task_id=eq.dashboard-owner-observability-fix-batch-2026-09-10&order=updated_at.desc&limit=1")
+        since=f"&event_time_ms=gt.{since_event_time_ms}" if since_event_time_ms is not None else ""; return await self.db.select("signal_audit_events",f"select=id,session_id,event_time_ms,observed_at,status,direction,source,rationale,gate_json,feature_json&source=eq.H-FB1{since}&order=event_time_ms.desc&limit={max(1,min(limit,200))}")
+    async def coordination_status(self)->list[dict[str,Any]]: return await self.db.select("agent_coordination_log", "select=task_id,status,claim,commit_sha,verified_by,verified_at,updated_at,next_action&task_id=eq.dashboard-owner-observability-fix-batch-2026-09-10&order=updated_at.desc&limit=1")
     async def governance_summary(self)->dict[str,Any]:
-        decisions=await self.db.select("owner_decisions", "select=id,title,decision,owner_reason,scope,status,effective_at,related_commit&status=eq.ACTIVE&order=effective_at.desc&limit=1")
-        recommendations=await self.db.select("agent_recommendations", "select=id,recommendation,owner_disposition,implementation_status,scope,related_commit,created_at&owner_disposition=eq.APPROVED&order=created_at.desc&limit=1")
-        return {"decision":decisions[0] if decisions else None,"recommendation":recommendations[0] if recommendations else None}
+        decisions=await self.db.select("owner_decisions", "select=id,title,decision,owner_reason,scope,status,effective_at,related_commit&status=eq.ACTIVE&order=effective_at.desc&limit=1"); recommendations=await self.db.select("agent_recommendations", "select=id,recommendation,owner_disposition,implementation_status,scope,related_commit,created_at&owner_disposition=eq.APPROVED&order=created_at.desc&limit=1"); return {"decision":decisions[0] if decisions else None,"recommendation":recommendations[0] if recommendations else None}
     async def edge_scan(self,horizon_seconds:int,fee_bps:float|None,sample_limit:int,as_of_event_time_ms:int|None)->list[dict[str,Any]]: return await self.db.rpc("research_edge_scan_frozen",{"horizon_seconds":horizon_seconds,"fee_bps":fee_bps,"sample_limit":sample_limit,"as_of_event_time_ms":as_of_event_time_ms})
     async def wfo_scan(self,as_of_event_time_ms:int,horizon_seconds:int,sample_limit:int,purge_seconds:int,embargo_seconds:int,fee_bps:float,slippage_bps:float)->list[dict[str,Any]]: return await self.db.rpc("research_wfo_signal_scan",{"p_as_of_event_time_ms":as_of_event_time_ms,"p_horizon_seconds":horizon_seconds,"p_sample_limit":sample_limit,"p_purge_seconds":purge_seconds,"p_embargo_seconds":embargo_seconds,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
     async def conditional_alpha_scan(self,as_of_event_time_ms:int,horizon_seconds:int,sample_limit:int,purge_seconds:int,embargo_seconds:int,fee_bps:float,slippage_bps:float)->list[dict[str,Any]]: return await self.db.rpc("research_conditional_alpha_scan",{"p_as_of_event_time_ms":as_of_event_time_ms,"p_horizon_seconds":horizon_seconds,"p_sample_limit":sample_limit,"p_purge_seconds":purge_seconds,"p_embargo_seconds":embargo_seconds,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
     async def hfb1_scan(self,oos_start_ms:int,as_of_event_time_ms:int,fee_bps:float=4.0,slippage_bps:float=1.0)->list[dict[str,Any]]: return await self.db.rpc("research_funding_hfb1",{"p_oos_start_ms":oos_start_ms,"p_as_of_event_time_ms":as_of_event_time_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
     async def hfb3_result(self)->dict[str,Any]|None:
-        rows=await self.db.select("research_results","select=id,model_run_id,sample_count,expectancy,cost_adjusted_ev,hit_rate,confidence_interval,regime_stability,period_concentration,status,created_at&order=created_at.desc&limit=1")
+        rows=await self.db.select("research_hfb3_public","select=result_id,model_run_id,sample_count,expectancy,cost_adjusted_ev,hit_rate,confidence_interval,regime_stability,period_concentration,status,created_at&limit=1")
         if not rows:return None
         result=rows[0]; ci=result.get("confidence_interval") or {}; net=result.get("cost_adjusted_ev")
-        return {"status":"RESEARCH_ONLY","research_status":"KILLED" if result.get("status")=="killed" else str(result.get("status","UNAVAILABLE")).upper(),"data":[{"bucket":"overall","n":result.get("sample_count"),"mean_gross_bps":result.get("expectancy"),"mean_net_bps":net,"net_ci95_low":ci.get("ci95_low_bps"),"net_ci95_high":ci.get("ci95_high_bps"),"hit_rate":result.get("hit_rate")}],"evidence":{"result_id":result.get("id"),"model_run_id":result.get("model_run_id"),"stress_net_bps":float(net)-2 if net is not None else None,"regime_stability":result.get("regime_stability"),"period_concentration":result.get("period_concentration"),"created_at":result.get("created_at")},"trading_enabled":False}
+        return {"status":"RESEARCH_ONLY","research_status":"KILLED" if result.get("status")=="killed" else str(result.get("status","UNAVAILABLE")).upper(),"data":[{"bucket":"overall","n":result.get("sample_count"),"mean_gross_bps":result.get("expectancy"),"mean_net_bps":net,"net_ci95_low":ci.get("ci95_low_bps"),"net_ci95_high":ci.get("ci95_high_bps"),"hit_rate":result.get("hit_rate")}],"evidence":{"result_id":result.get("result_id"),"model_run_id":result.get("model_run_id"),"stress_net_bps":float(net)-2 if net is not None else None,"regime_stability":result.get("regime_stability"),"period_concentration":result.get("period_concentration"),"created_at":result.get("created_at")},"trading_enabled":False}
     async def sw1_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]: return await self.db.rpc("research_sw1_manus_scan_frozen",{"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
     async def sw1_claude_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]:
         text_as_of=str(as_of_ms) if as_of_ms is not None else None; return await self.db.rpc("research_sw1_scan_frozen",{"p_as_of_ms":text_as_of,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
@@ -121,8 +115,7 @@ async def landing()->FileResponse:
 @app.get("/health")
 async def health()->dict[str,Any]:
     try:
-        session=await app.state.live.current_session();feature=await app.state.live.latest_feature();ff=freshness(feature)
-        return {"status":"ok" if session and ff["available"] and not ff["stale"] else "degraded","symbol":app.state.config.symbol,"collector_session":session,"feature_freshness":ff}
+        session=await app.state.live.current_session();feature=await app.state.live.latest_feature();ff=freshness(feature); return {"status":"ok" if session and ff["available"] and not ff["stale"] else "degraded","symbol":app.state.config.symbol,"collector_session":session,"feature_freshness":ff}
     except Exception as exc:raise HTTPException(status_code=503,detail="live data unavailable") from exc
 @app.get("/api/v1/features/latest")
 async def features_latest()->dict[str,Any]:
