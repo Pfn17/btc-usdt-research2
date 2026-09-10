@@ -12,11 +12,11 @@ HyperHan Lab is one read-only research archive presented as one continuous mobil
 
 ## Resource boundaries
 
-The existing `loadStory()`, `loadTerminal()`, and `loadVisual()` functions remain the backend read boundary. Terminal runs on a fast operational loop. Story and Visual run on one slow 15-minute loop. Frozen research comparison is read-only and uses the already defined research endpoints; it does not create a new scan or database write.
+The dashboard uses `loadOperational()` for current health, market, funding, audit, and governance-summary reads, and `loadResearch()` for the frozen H-FB1/H-SW1 result reads. The operational loop runs every 15 seconds; research refreshes every 15 minutes and is also loaded once at startup. This keeps the initial page complete without repeatedly spending research RPC capacity on an operational cadence. All reads remain read-only and create no new scan or database write.
 
 The OHLCV chart uses the production-safe limit of 20 records. Its SVG includes maximum, midpoint, and minimum price labels, plus first and last candle timestamps. The EV/CI95 whisker chart renders only returned research fields. Missing fields remain `UNAVAILABLE`; no estimate is inferred from another result.
 
-The evidence-path diagram uses the neutral term **Collector runtime**. It does not claim Railway or any other host unless that hosting fact is independently verified in the backend or deployment evidence.
+The evidence-path diagram uses neutral terms: **Market observations → Collection → Research record → Owner view**. It does not claim a vendor, host, database, API path, or RPC name in the owner-facing surface.
 
 ## Design rules
 
@@ -26,6 +26,6 @@ CSS is mobile-first. The base layout is one column. Wider grids are introduced o
 
 ## Owner identity and failure behavior
 
-The public owner identity is **@parhanfirdausnugraha**. It appears in the header and footer. The footer identifies the archive as read-only, states that trading execution is disabled, and states that there is no validated edge.
+The public owner identity is **@parhanfirdausnugraha**. It appears in the header. The footer identifies the archive as read-only, states that trading execution is disabled, and states that there is no validated edge. The owner-facing memory section reads the latest active owner decision and approved recommendation from the governance summary endpoint; it does not expose the full governance tables.
 
 If a live request fails, the affected field or resource reports its actual unavailable state. The page does not downgrade honesty to preserve visual completeness. This behavior is part of the research audit trail.
