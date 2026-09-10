@@ -35,18 +35,13 @@ class SupabaseReadClient:
     def __init__(self, config: APIConfig) -> None:
         self.config = config
         self.client = httpx.AsyncClient(base_url=f"{config.url}/rest/v1", timeout=httpx.Timeout(15.0, connect=3.0), headers={"apikey": config.key, "Authorization": f"Bearer {config.key}"})
-    async def close(self) -> None:
-        await self.client.aclose()
+    async def close(self) -> None: await self.client.aclose()
     async def select(self, table: str, query: str) -> list[dict[str, Any]]:
-        response = await self.client.get(f"/{table}?{query}")
-        response.raise_for_status()
-        payload = response.json()
+        response = await self.client.get(f"/{table}?{query}"); response.raise_for_status(); payload = response.json()
         if not isinstance(payload, list): raise RuntimeError(f"unexpected {table} response")
         return payload
     async def rpc(self, function: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
-        response = await self.client.post(f"/rpc/{function}", json=payload)
-        response.raise_for_status()
-        data = response.json()
+        response = await self.client.post(f"/rpc/{function}", json=payload); response.raise_for_status(); data = response.json()
         if not isinstance(data, list): raise RuntimeError(f"unexpected {function} response")
         return data
 
@@ -73,37 +68,24 @@ class LiveAPI:
         decisions=await self.db.select("owner_decisions", "select=id,title,decision,owner_reason,scope,status,effective_at,related_commit&status=eq.ACTIVE&order=effective_at.desc&limit=1")
         recommendations=await self.db.select("agent_recommendations", "select=id,recommendation,owner_disposition,implementation_status,scope,related_commit,created_at&owner_disposition=eq.APPROVED&order=created_at.desc&limit=1")
         return {"decision":decisions[0] if decisions else None,"recommendation":recommendations[0] if recommendations else None}
-    async def edge_scan(self,horizon_seconds:int,fee_bps:float|None,sample_limit:int,as_of_event_time_ms:int|None)->list[dict[str,Any]]:
-        return await self.db.rpc("research_edge_scan_frozen",{"horizon_seconds":horizon_seconds,"fee_bps":fee_bps,"sample_limit":sample_limit,"as_of_event_time_ms":as_of_event_time_ms})
-    async def wfo_scan(self,as_of_event_time_ms:int,horizon_seconds:int,sample_limit:int,purge_seconds:int,embargo_seconds:int,fee_bps:float,slippage_bps:float)->list[dict[str,Any]]:
-        return await self.db.rpc("research_wfo_signal_scan",{"p_as_of_event_time_ms":as_of_event_time_ms,"p_horizon_seconds":horizon_seconds,"p_sample_limit":sample_limit,"p_purge_seconds":purge_seconds,"p_embargo_seconds":embargo_seconds,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
-    async def conditional_alpha_scan(self,as_of_event_time_ms:int,horizon_seconds:int,sample_limit:int,purge_seconds:int,embargo_seconds:int,fee_bps:float,slippage_bps:float)->list[dict[str,Any]]:
-        return await self.db.rpc("research_conditional_alpha_scan",{"p_as_of_event_time_ms":as_of_event_time_ms,"p_horizon_seconds":horizon_seconds,"p_sample_limit":sample_limit,"p_purge_seconds":purge_seconds,"p_embargo_seconds":embargo_seconds,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
-    async def hfb1_scan(self,oos_start_ms:int,as_of_event_time_ms:int,fee_bps:float=4.0,slippage_bps:float=1.0)->list[dict[str,Any]]:
-        return await self.db.rpc("research_funding_hfb1",{"p_oos_start_ms":oos_start_ms,"p_as_of_event_time_ms":as_of_event_time_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
+    async def edge_scan(self,horizon_seconds:int,fee_bps:float|None,sample_limit:int,as_of_event_time_ms:int|None)->list[dict[str,Any]]: return await self.db.rpc("research_edge_scan_frozen",{"horizon_seconds":horizon_seconds,"fee_bps":fee_bps,"sample_limit":sample_limit,"as_of_event_time_ms":as_of_event_time_ms})
+    async def wfo_scan(self,as_of_event_time_ms:int,horizon_seconds:int,sample_limit:int,purge_seconds:int,embargo_seconds:int,fee_bps:float,slippage_bps:float)->list[dict[str,Any]]: return await self.db.rpc("research_wfo_signal_scan",{"p_as_of_event_time_ms":as_of_event_time_ms,"p_horizon_seconds":horizon_seconds,"p_sample_limit":sample_limit,"p_purge_seconds":purge_seconds,"p_embargo_seconds":embargo_seconds,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
+    async def conditional_alpha_scan(self,as_of_event_time_ms:int,horizon_seconds:int,sample_limit:int,purge_seconds:int,embargo_seconds:int,fee_bps:float,slippage_bps:float)->list[dict[str,Any]]: return await self.db.rpc("research_conditional_alpha_scan",{"p_as_of_event_time_ms":as_of_event_time_ms,"p_horizon_seconds":horizon_seconds,"p_sample_limit":sample_limit,"p_purge_seconds":purge_seconds,"p_embargo_seconds":embargo_seconds,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
+    async def hfb1_scan(self,oos_start_ms:int,as_of_event_time_ms:int,fee_bps:float=4.0,slippage_bps:float=1.0)->list[dict[str,Any]]: return await self.db.rpc("research_funding_hfb1",{"p_oos_start_ms":oos_start_ms,"p_as_of_event_time_ms":as_of_event_time_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
     async def hfb3_result(self)->dict[str,Any]|None:
-        runs=await self.db.select("model_runs","select=id,batch_id,model_name,parameters,created_at&model_name=eq.hfb3_frozen_oos_sql&order=created_at.desc&limit=1")
-        if not runs:return None
-        run=runs[0]
-        rows=await self.db.select("research_results",f"select=id,sample_count,expectancy,cost_adjusted_ev,hit_rate,confidence_interval,regime_stability,period_concentration,status,created_at&model_run_id=eq.{run['id']}&order=created_at.desc&limit=1")
+        rows=await self.db.select("research_results","select=id,model_run_id,sample_count,expectancy,cost_adjusted_ev,hit_rate,confidence_interval,regime_stability,period_concentration,status,created_at&order=created_at.desc&limit=1")
         if not rows:return None
-        result=rows[0]
-        ci=result.get("confidence_interval") or {}
-        return {"status":"RESEARCH_ONLY","research_status":"KILLED" if result.get("status")=="killed" else result.get("status","UNAVAILABLE").upper(),"data":[{"bucket":"overall","n":result.get("sample_count"),"mean_gross_bps":result.get("expectancy"),"mean_net_bps":result.get("cost_adjusted_ev"),"net_ci95_low":ci.get("ci95_low_bps"),"net_ci95_high":ci.get("ci95_high_bps"),"hit_rate":result.get("hit_rate")}],"evidence":{"result_id":result.get("id"),"model_run_id":run.get("id"),"parameters":run.get("parameters"),"regime_stability":result.get("regime_stability"),"period_concentration":result.get("period_concentration"),"created_at":result.get("created_at")},"trading_enabled":False}
-    async def sw1_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]:
-        return await self.db.rpc("research_sw1_manus_scan_frozen",{"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
+        result=rows[0]; ci=result.get("confidence_interval") or {}; net=result.get("cost_adjusted_ev")
+        return {"status":"RESEARCH_ONLY","research_status":"KILLED" if result.get("status")=="killed" else str(result.get("status","UNAVAILABLE")).upper(),"data":[{"bucket":"overall","n":result.get("sample_count"),"mean_gross_bps":result.get("expectancy"),"mean_net_bps":net,"net_ci95_low":ci.get("ci95_low_bps"),"net_ci95_high":ci.get("ci95_high_bps"),"hit_rate":result.get("hit_rate")}],"evidence":{"result_id":result.get("id"),"model_run_id":result.get("model_run_id"),"stress_net_bps":float(net)-2 if net is not None else None,"regime_stability":result.get("regime_stability"),"period_concentration":result.get("period_concentration"),"created_at":result.get("created_at")},"trading_enabled":False}
+    async def sw1_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]: return await self.db.rpc("research_sw1_manus_scan_frozen",{"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
     async def sw1_claude_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]:
-        text_as_of=str(as_of_ms) if as_of_ms is not None else None
-        return await self.db.rpc("research_sw1_scan_frozen",{"p_as_of_ms":text_as_of,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
-    async def live_imbalance_signal(self,sample_limit:int)->list[dict[str,Any]]:
-        return await self.db.rpc("research_live_imbalance_signal",{"p_sample_limit":sample_limit})
+        text_as_of=str(as_of_ms) if as_of_ms is not None else None; return await self.db.rpc("research_sw1_scan_frozen",{"p_as_of_ms":text_as_of,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
+    async def live_imbalance_signal(self,sample_limit:int)->list[dict[str,Any]]: return await self.db.rpc("research_live_imbalance_signal",{"p_sample_limit":sample_limit})
 
 PUBLIC_AGGREGATE_FIELDS=("gross_profit","gross_loss","net_profit","closed_observations","wins","losses","win_rate","average_outcome","profit_factor","maximum_drawdown","status","trading_enabled")
-
 def public_aggregate_metrics(row:dict[str,Any]|None)->dict[str,Any]:
     if row is None:return {"status":"UNAVAILABLE","trading_enabled":False}
     return {key:row[key] for key in PUBLIC_AGGREGATE_FIELDS if key in row}
-
 def hfb1_research_status(rows:list[dict[str,Any]])->str:
     row=next((r for r in rows if str(r.get("bucket","")).lower()=="overall"),None) or (rows[0] if rows else None)
     if not row:return "UNAVAILABLE"
@@ -112,7 +94,6 @@ def hfb1_research_status(rows:list[dict[str,Any]])->str:
     if net<=0:return "KILLED · NET EV ≤ 0"
     if lo<=0<=hi:return "INCONCLUSIVE · NOT PROMOTED"
     return "PROMOTION ELIGIBLE · REVIEW REQUIRED"
-
 def freshness(row:dict[str,Any]|None)->dict[str,Any]:
     if not row:return {"available":False,"stale":True,"age_ms":None}
     value=row.get("receive_time_ns")
@@ -128,83 +109,69 @@ async def lifespan(app:FastAPI):
     config=load_config();db=SupabaseReadClient(config);app.state.live=LiveAPI(db);app.state.config=config
     try:yield
     finally:await db.close()
-
 app=FastAPI(title="BTCUSDT Research API",version="0.6.1",default_response_class=ORJSONResponse,lifespan=lifespan)
-
 @app.get("/",response_class=FileResponse,include_in_schema=False)
 async def dashboard()->FileResponse:
     if not DASHBOARD_PATH.is_file():raise HTTPException(status_code=404,detail="dashboard unavailable")
     return FileResponse(DASHBOARD_PATH,media_type="text/html")
-
 @app.get("/lab",response_class=FileResponse,include_in_schema=False)
 async def landing()->FileResponse:
     if not LANDING_PATH.is_file():raise HTTPException(status_code=404,detail="landing page unavailable")
     return FileResponse(LANDING_PATH,media_type="text/html")
-
 @app.get("/health")
 async def health()->dict[str,Any]:
     try:
         session=await app.state.live.current_session();feature=await app.state.live.latest_feature();ff=freshness(feature)
         return {"status":"ok" if session and ff["available"] and not ff["stale"] else "degraded","symbol":app.state.config.symbol,"collector_session":session,"feature_freshness":ff}
     except Exception as exc:raise HTTPException(status_code=503,detail="live data unavailable") from exc
-
 @app.get("/api/v1/features/latest")
 async def features_latest()->dict[str,Any]:
     try:row=await app.state.live.latest_feature()
     except Exception as exc:raise HTTPException(status_code=503,detail="feature store unavailable") from exc
     if row is None:raise HTTPException(status_code=503,detail="no live feature data")
     return {"data":row,"freshness":freshness(row)}
-
 @app.get("/api/v1/collector/health")
 async def collector_health()->dict[str,Any]:
     try:row=await app.state.live.latest_health()
     except Exception as exc:raise HTTPException(status_code=503,detail="collector health unavailable") from exc
     if row is None:raise HTTPException(status_code=503,detail="no collector health data")
     return {"data":row,"freshness":freshness(row)}
-
 @app.get("/api/v1/session/current")
 async def session_current()->dict[str,Any]:
     try:row=await app.state.live.current_session()
     except Exception as exc:raise HTTPException(status_code=503,detail="session store unavailable") from exc
     if row is None:raise HTTPException(status_code=503,detail="no running research session")
     return {"data":row,"freshness":freshness(row)}
-
 @app.get("/api/v1/market/ohlcv/latest")
 async def market_ohlcv_latest(limit:int=Query(3,ge=1,le=20))->dict[str,Any]:
     try:rows=await app.state.live.latest_ohlcv(limit)
     except Exception as exc:raise HTTPException(status_code=503,detail="OHLCV store unavailable") from exc
     return {"data":rows,"freshness":freshness(rows[0] if rows else None)}
-
 @app.get("/api/v1/funding/latest")
 async def funding_latest()->dict[str,Any]:
     try:row=await app.state.live.latest_funding_event()
     except Exception as exc:raise HTTPException(status_code=503,detail="funding event store unavailable") from exc
     return {"data":row,"freshness":freshness(row)}
-
 @app.get("/api/v1/signals/log")
 async def signals_log(limit:int=Query(50,ge=1,le=200))->dict[str,Any]:
     try:rows=await app.state.live.signal_audit_events(limit)
     except Exception as exc:raise HTTPException(status_code=503,detail="signal audit unavailable") from exc
     return {"data":rows,"count":len(rows),"source":"H-FB1"}
-
 @app.get("/api/v1/signal/history")
 async def signal_history(limit:int=Query(50,ge=1,le=200),since_event_time_ms:int|None=Query(None,ge=0))->dict[str,Any]:
     try:rows=await app.state.live.signal_history(limit,since_event_time_ms)
     except Exception as exc:raise HTTPException(status_code=503,detail="signal history unavailable") from exc
     return {"data":rows,"count":len(rows),"unseen_count":len(rows) if since_event_time_ms is not None else 0,"last_event":rows[0] if rows else None,"source":"H-FB1","read_only":True}
-
 @app.get("/api/v1/governance/summary")
 async def governance_summary()->dict[str,Any]:
     try:data=await app.state.live.governance_summary()
     except Exception as exc:raise HTTPException(status_code=503,detail="governance memory unavailable") from exc
     return {**data,"runtime_status":"AVAILABLE" if data["decision"] or data["recommendation"] else "UNAVAILABLE","read_only":True}
-
 @app.get("/api/v1/observability/verification")
 async def observability_verification()->dict[str,Any]:
     try:rows=await app.state.live.coordination_status()
     except Exception as exc:raise HTTPException(status_code=503,detail="verification state unavailable") from exc
     return {"data":rows[0] if rows else None,"runtime_status":"AVAILABLE" if rows else "UNAVAILABLE","read_only":True}
-
 @app.get("/api/v1/signal/hfb1/current")
 async def hfb1_current()->dict[str,Any]:
     try:
@@ -213,46 +180,38 @@ async def hfb1_current()->dict[str,Any]:
         rate=float(event["funding_rate"]);direction="LONG" if rate>0 else "SHORT" if rate<0 else "NONE";ft=int(event["funding_time_ms"]);mt=ft+240*60*1000
         return {"status":"OBSERVED","signal":direction,"funding_rate":event["funding_rate"],"funding_time_ms":ft,"maturity_time_ms":mt,"matured":int(time.time()*1000)>=mt,"trading_enabled":False,"method":"H-FB1 funding-rate sign at completed funding event"}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-FB1 live signal unavailable") from exc
-
 @app.get("/api/v1/research/hfb1")
 async def research_hfb1(oos_start_ms:int|None=Query(None,ge=0),fee_bps:float=Query(4.0,ge=0,le=100),slippage_bps:float=Query(1.0,ge=0,le=100))->dict[str,Any]:
     try:
         latest=await app.state.live.latest_funding_event()
         if not latest:return {"status":"NO_DATA","data":[],"trading_enabled":False}
-        as_of=int(latest["funding_time_ms"]);start=oos_start_ms if oos_start_ms is not None else as_of-90*86_400_000
-        rows=await app.state.live.hfb1_scan(start,as_of,fee_bps,slippage_bps)
+        as_of=int(latest["funding_time_ms"]);start=oos_start_ms if oos_start_ms is not None else as_of-90*86_400_000;rows=await app.state.live.hfb1_scan(start,as_of,fee_bps,slippage_bps)
         return {"status":"RESEARCH_ONLY","research_status":hfb1_research_status(rows),"decision_source":"backend","data":rows,"parameters":{"oos_start_ms":start,"as_of_event_time_ms":as_of,"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps,"horizon_minutes":240},"trading_enabled":False}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-FB1 research unavailable") from exc
-
 @app.get("/api/v1/research/hfb3")
 async def research_hfb3()->dict[str,Any]:
-    try:
-        result=await app.state.live.hfb3_result()
+    try:result=await app.state.live.hfb3_result()
     except Exception as exc:raise HTTPException(status_code=503,detail="H-FB3 research unavailable") from exc
     if result is None:return {"status":"UNAVAILABLE","data":[],"trading_enabled":False}
     return result
-
 @app.get("/api/v1/research/sw1-manus")
 async def research_sw1_manus()->dict[str,Any]:
     try:
         latest=await app.state.live.latest_ohlcv(1);as_of_ms=int(latest[0]["open_time_ms"]) if latest else None;rows=await app.state.live.sw1_scan(as_of_ms,4.0,1.0,3)
         return {"status":"RESEARCH_ONLY","method":"H-SW1-MANUS","data":rows,"parameters":{"as_of_ms":as_of_ms,"fee_bps_per_side":4.0,"slippage_bps_per_side":1.0,"funding_lookback_events":3,"horizon_hours":24},"trading_enabled":False,"research_status":"independent_method_unverified"}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-SW1-MANUS research unavailable") from exc
-
 @app.get("/api/v1/research/sw1-claude")
 async def research_sw1_claude()->dict[str,Any]:
     try:
         latest=await app.state.live.latest_ohlcv(1);as_of_ms=int(latest[0]["open_time_ms"]) if latest else None;rows=await app.state.live.sw1_claude_scan(as_of_ms,4.0,1.0,3)
         return {"status":"RESEARCH_ONLY","method":"H-SW1-CLAUDE","data":rows,"parameters":{"as_of_ms":as_of_ms,"fee_bps_per_side":4.0,"slippage_bps_per_side":1.0,"funding_lookback_events":3,"horizon_hours":24},"trading_enabled":False,"research_status":"official_result_requires_independent_verification"}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-SW1-CLAUDE research unavailable") from exc
-
 @app.get("/api/v1/research/edge-scan")
 async def research_edge_scan(horizon_seconds:int=Query(60,ge=60,le=300),fee_bps:float|None=Query(None,ge=0,le=100),sample_limit:int=Query(50000,ge=5000,le=200000),as_of_event_time_ms:int|None=Query(None,ge=0))->dict[str,Any]:
     if horizon_seconds not in (60,120,180,300):raise HTTPException(status_code=400,detail="horizon_seconds must be one of 60, 120, 180, 300")
     try:rows=await app.state.live.edge_scan(horizon_seconds,fee_bps,sample_limit,as_of_event_time_ms)
     except Exception as exc:raise HTTPException(status_code=503,detail="edge scan unavailable") from exc
     return {"data":rows,"method":{"status":"exploratory_screen_only"},"parameters":{"horizon_seconds":horizon_seconds,"fee_bps":fee_bps,"sample_limit":sample_limit,"as_of_event_time_ms":as_of_event_time_ms}}
-
 @app.get("/api/v1/research/wfo")
 async def research_wfo(horizon_seconds:int=Query(60,ge=60,le=300),sample_limit:int=Query(50000,ge=20000,le=200000),fee_bps:float=Query(4.0,ge=0,le=100),slippage_bps:float=Query(0.0,ge=0,le=100),purge_seconds:int=Query(60,ge=0,le=300),embargo_seconds:int=Query(60,ge=0,le=300))->dict[str,Any]:
     if horizon_seconds not in (60,120,180,300):raise HTTPException(status_code=400,detail="horizon_seconds must be one of 60, 120, 180, 300")
@@ -263,7 +222,6 @@ async def research_wfo(horizon_seconds:int=Query(60,ge=60,le=300),sample_limit:i
     except Exception as exc:raise HTTPException(status_code=503,detail="WFO scan unavailable") from exc
     positive=sum(1 for r in folds if float(r.get("combined_net_ev_bps",0))>0 and float(r.get("ci95_low",0))>0);gate=bool(folds) and positive==len(folds) and sum(int(r.get("combined_n",0)) for r in folds)>=5000
     return {"status":"PAPER_CANDIDATE" if gate else "NO_SIGNAL","gate":{"all_folds_positive_and_ci95":gate,"positive_folds":positive,"folds":len(folds),"min_effective_samples":5000},"parameters":{"cutoff_event_time_ms":cutoff,"horizon_seconds":horizon_seconds,"sample_limit":sample_limit,"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps,"purge_seconds":purge_seconds,"embargo_seconds":embargo_seconds},"folds":folds,"limitations":["baseline imbalance_1 quantile rule only","no block bootstrap/FDR in this gate yet","no executable L2 impact model","paper signal only; live trading remains disabled"]}
-
 @app.get("/api/v1/research/conditional-alpha")
 async def research_conditional_alpha(horizon_seconds:int=Query(60,ge=60,le=300),sample_limit:int=Query(50000,ge=20000,le=200000),fee_bps:float=Query(4.0,ge=0,le=100),slippage_bps:float=Query(0.0,ge=0,le=100),purge_seconds:int=Query(60,ge=0,le=300),embargo_seconds:int=Query(60,ge=0,le=300))->dict[str,Any]:
     if horizon_seconds not in (60,120,180,300):raise HTTPException(status_code=400,detail="horizon_seconds must be one of 60, 120, 180, 300")
@@ -273,14 +231,12 @@ async def research_conditional_alpha(horizon_seconds:int=Query(60,ge=60,le=300),
     try:rows=await app.state.live.conditional_alpha_scan(cutoff,horizon_seconds,sample_limit,purge_seconds,embargo_seconds,fee_bps,slippage_bps)
     except Exception as exc:raise HTTPException(status_code=503,detail="conditional alpha scan unavailable") from exc
     return {"status":"RESEARCH_ONLY","parameters":{"cutoff_event_time_ms":cutoff,"horizon_seconds":horizon_seconds,"sample_limit":sample_limit,"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps,"purge_seconds":purge_seconds,"embargo_seconds":embargo_seconds},"hypotheses":["imbalance_1 + microprice deviation agreement + low spread","imbalance_1 + order-flow agreement + low spread"],"data":rows,"limitations":["only two preregistered interaction hypotheses","fill/execution probability is not observed","no ML","no walk-the-book simulation","not a live-trading approval"]}
-
 @app.get("/api/v1/research/ohlcv-scan")
 async def research_ohlcv_scan(lookback_minutes:int=Query(60,ge=1,le=1440),horizon_minutes:int=Query(15,ge=1,le=240),fee_bps:float=Query(4.0,ge=0,le=100),slippage_bps:float=Query(0.0,ge=0,le=100),sample_limit:int=Query(20000,ge=1000,le=100000))->dict[str,Any]:
     latest=await app.state.live.latest_ohlcv(1)
     if not latest:raise HTTPException(status_code=503,detail="no OHLCV data")
     rows=await app.state.live.db.rpc("research_ohlcv_momentum_frozen",{"p_as_of_open_time_ms":int(latest[0]["open_time_ms"]),"p_lookback_minutes":lookback_minutes,"p_horizon_minutes":horizon_minutes,"p_sample_limit":sample_limit,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps})
     return {"data":rows,"status":"RESEARCH_ONLY"}
-
 @app.get("/api/v1/signal/current")
 async def current_signal(fee_bps:float=Query(4.0,ge=0,le=100),slippage_bps:float=Query(0.0,ge=0,le=100))->dict[str,Any]:
     try:
@@ -289,7 +245,6 @@ async def current_signal(fee_bps:float=Query(4.0,ge=0,le=100),slippage_bps:float
         cutoff=int(latest["event_time_ms"]);folds=await app.state.live.wfo_scan(cutoff,60,50000,60,60,fee_bps,slippage_bps);gate=bool(folds) and all(float(r.get("combined_net_ev_bps",0))>0 and float(r.get("ci95_low",0))>0 for r in folds);direction=candidate["candidate_direction"] if gate else "NONE"
         return {"signal":direction,"status":"PAPER_CANDIDATE" if direction!="NONE" else "NO_SIGNAL","feature":{"imbalance_1":candidate["imbalance_1"],"q20":candidate["q20"],"q80":candidate["q80"],"event_time_ms":candidate["event_time_ms"]},"cost":{"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps},"gate":{"all_oos_folds_positive_ci95":gate,"folds":folds},"trading_enabled":False}
     except Exception as exc:raise HTTPException(status_code=503,detail="signal engine unavailable") from exc
-
 @app.websocket("/ws/features")
 async def websocket_features(websocket:WebSocket)->None:
     await websocket.accept();last_key:tuple[Any,Any]|None=None
