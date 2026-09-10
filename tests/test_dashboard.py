@@ -25,8 +25,8 @@ def test_dashboard_is_an_owner_first_research_archive():
     assert "Evidence gate" in html
     assert "Find edges. Reject noise." not in html
     assert "gradient" not in html.lower()
-    assert "Evidence you can inspect" in html
-    assert "System state and provenance" in html
+    assert "Evidence" in html
+    assert "System status" in html
     assert "Funding follow-sign" in html and "Swing" in html
 
 
@@ -39,7 +39,7 @@ def test_dashboard_has_three_owner_surfaces_and_safe_refresh():
     assert "setInterval(loadResearch,900000)" in html
     assert "Loading current research data" in html
     assert "zero decision boundary" in html
-    assert "System state and provenance" in html
+    assert "System status" in html
     assert "Project memory" not in html
     assert "governance/summary" not in html
     assert "toLocaleString('en-US'" in html

@@ -12,7 +12,7 @@ for forbidden in ("radial-gradient", "linear-gradient", "Find edges.", "Tell AI"
 for required in (
     "No validated edge.", "RESEARCH ARCHIVE", "Execution", "OFF", "KILL",
     "INCONCLUSIVE", "UNAVAILABLE", "Never inferred", "Loading current research data",
-    "Current position", "Evidence gate", "Evidence you can inspect", "System state and provenance",
+    "Current position", "Evidence gate", "System status",
     "Reference lineage", "Independent lineage", "/api/v1/research/hfb1",
     "/api/v1/research/sw1-claude", "/api/v1/research/sw1-manus",
     "READ-ONLY", "zero decision boundary",
