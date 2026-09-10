@@ -7,7 +7,7 @@ HyperHan Lab is one read-only research archive presented as one continuous mobil
 | Order | Section | Purpose | Evidence surface | Refresh policy |
 |---|---|---|---|---:|
 | 1 | **Current position** | State the current research conclusion and safety boundary | Frozen decision summary and execution state | Static copy plus backend refresh |
-| 2 | **Research** | Show frozen research measurements and separate H-SW1 lineages | H-FB1, H-SW1 reference/Claude, H-SW1 independent/Manus, N, net EV, CI95, and decision | Research refresh every 15 minutes |
+| 2 | **Research** | Show frozen research measurements and separate H-SW1 lineages | H-FB1, H-SW1 reference, H-SW1 independent, N, net EV, CI95, and decision | Research refresh every 15 minutes |
 | 3 | **Evidence** | Show current observations and decision-boundary visualization | OHLCV chart, observation window, EV/CI95 view, and neutral evidence path | Operational data every 15 seconds; derived research view every 15 minutes |
 | 4 | **System** | Show whether the archive can currently observe and report data | Health, collector, market/funding freshness, event count, provenance, verification, and execution | Operational refresh every 15 seconds |
 
@@ -23,7 +23,7 @@ The evidence path uses neutral terms: **Market observations → Collection → R
 
 The priority order is **values and integrity, information architecture, clarity, professional restraint, then aesthetics**. The dashboard must not use mock data, fabricated live numbers, disguised errors, unsupported performance claims, hidden execution, gradients, glassmorphism, pulsing decorative dots, or AI/model branding.
 
-CSS is mobile-first. The base layout is one column. Wider grids are introduced only at `min-width: 768px`. SVG elements use responsive width, automatic height, and a preserved aspect ratio so the evidence remains readable on narrow screens.
+CSS is mobile-first. The base layout is one column. Wider grids are introduced only at `min-width: 700px`. SVG elements use responsive width, automatic height, and a preserved aspect ratio so the evidence remains readable on narrow screens.
 
 ## Failure behavior
 

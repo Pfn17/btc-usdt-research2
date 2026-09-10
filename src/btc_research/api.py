@@ -106,6 +106,15 @@ def public_aggregate_metrics(row:dict[str,Any]|None)->dict[str,Any]:
         return {"status": "UNAVAILABLE", "trading_enabled": False}
     return {key: row[key] for key in PUBLIC_AGGREGATE_FIELDS if key in row}
 
+def hfb1_research_status(rows:list[dict[str,Any]])->str:
+    row=next((r for r in rows if str(r.get("bucket", "")).lower()=="overall"), None) or (rows[0] if rows else None)
+    if not row:return "UNAVAILABLE"
+    try: net=float(row["mean_net_bps"]); lo=float(row["net_ci95_low"]); hi=float(row["net_ci95_high"])
+    except (KeyError,TypeError,ValueError): return "UNAVAILABLE"
+    if net<=0:return "KILLED · NET EV ≤ 0"
+    if lo<=0<=hi:return "INCONCLUSIVE · NOT PROMOTED"
+    return "PROMOTION ELIGIBLE · REVIEW REQUIRED"
+
 def freshness(row:dict[str,Any]|None)->dict[str,Any]:
     if not row:return {"available":False,"stale":True,"age_ms":None}
     value=row.get("receive_time_ns")
@@ -217,7 +226,7 @@ async def research_hfb1(oos_start_ms:int|None=Query(None,ge=0),fee_bps:float=Que
         if not latest:return {"status":"NO_DATA","data":[],"trading_enabled":False}
         as_of=int(latest["funding_time_ms"]); start=oos_start_ms if oos_start_ms is not None else as_of-90*86_400_000
         rows=await app.state.live.hfb1_scan(start,as_of,fee_bps,slippage_bps)
-        return {"status":"RESEARCH_ONLY","data":rows,"parameters":{"oos_start_ms":start,"as_of_event_time_ms":as_of,"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps,"horizon_minutes":240},"trading_enabled":False}
+        return {"status":"RESEARCH_ONLY","research_status":hfb1_research_status(rows),"decision_source":"backend","data":rows,"parameters":{"oos_start_ms":start,"as_of_event_time_ms":as_of,"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps,"horizon_minutes":240},"trading_enabled":False}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-FB1 research unavailable") from exc
 
 @app.get("/api/v1/research/sw1-manus")
