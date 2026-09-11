@@ -76,6 +76,8 @@ class LiveAPI:
         text_as_of=str(as_of_ms) if as_of_ms is not None else None; return await self.db.rpc("research_sw1_scan_frozen",{"p_as_of_ms":text_as_of,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
     async def hmr1_scan(self,oos_start_ms:int,as_of_ms:int,fee_bps:float=4.0,slippage_bps:float=1.0,stress_round_trip_bps:float=12.0)->list[dict[str,Any]]:
         return await self.db.rpc("research_hmr1_scan_frozen",{"p_oos_start_ms":oos_start_ms,"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_stress_round_trip_bps":stress_round_trip_bps})
+    async def hmr1_readiness(self,as_of_ms:int,p_oos_start_ms:int|None=None)->list[dict[str,Any]]:
+        return await self.db.rpc("research_hmr1_readiness",{"p_as_of_ms":as_of_ms,"p_oos_start_ms":p_oos_start_ms})
     async def live_imbalance_signal(self,sample_limit:int)->list[dict[str,Any]]: return await self.db.rpc("research_live_imbalance_signal",{"p_sample_limit":sample_limit})
 
 
@@ -203,6 +205,16 @@ async def research_sw1_claude()->dict[str,Any]:
         return {"status":"RESEARCH_ONLY","method":"H-SW1-CLAUDE","data":rows,"parameters":{"as_of_ms":as_of_ms,"fee_bps_per_side":4.0,"slippage_bps_per_side":1.0,"funding_lookback_events":3,"horizon_hours":24},"trading_enabled":False,"research_status":"official_result_requires_independent_verification"}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-SW1-CLAUDE research unavailable") from exc
 
+@app.get("/api/v1/research/hmr1/readiness")
+async def research_hmr1_readiness(p_oos_start_ms:int|None=Query(None,ge=0))->dict[str,Any]:
+    """Readiness-only H-MR1 surface; this route never runs the outcome scan."""
+    try:
+        latest=await app.state.live.latest_ohlcv(1)
+        if not latest:return {"status":"NO_DATA","data":None,"trading_enabled":False,"outcome_run":False}
+        as_of_ms=int(latest[0]["open_time_ms"])
+        rows=await app.state.live.hmr1_readiness(as_of_ms,p_oos_start_ms)
+        return {"status":"READINESS_ONLY","data":rows[0] if rows else None,"trading_enabled":False,"outcome_run":False}
+    except Exception as exc:raise HTTPException(status_code=503,detail="H-MR1 readiness unavailable") from exc
 @app.get("/api/v1/research/hmr1")
 async def research_hmr1(
     oos_start_ms:int=Query(...,ge=0),
