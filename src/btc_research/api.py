@@ -73,23 +73,11 @@ class LiveAPI:
         return {"status":"RESEARCH_ONLY","research_status":"KILLED" if result.get("status")=="killed" else str(result.get("status","UNAVAILABLE")).upper(),"data":[{"bucket":"overall","n":result.get("sample_count"),"mean_gross_bps":result.get("expectancy"),"mean_net_bps":net,"net_ci95_low":ci.get("ci95_low_bps"),"net_ci95_high":ci.get("ci95_high_bps"),"hit_rate":result.get("hit_rate")}],"evidence":{"result_id":result.get("result_id"),"model_run_id":result.get("model_run_id"),"stress_net_bps":float(net)-2 if net is not None else None,"regime_stability":result.get("regime_stability"),"period_concentration":result.get("period_concentration"),"created_at":result.get("created_at")},"trading_enabled":False}
     async def sw1_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]: return await self.db.rpc("research_sw1_manus_scan_frozen",{"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
     async def sw1_claude_scan(self,as_of_ms:int|None,fee_bps:float=4.0,slippage_bps:float=1.0,funding_lookback:int=3)->list[dict[str,Any]]:
-<<<<<<< HEAD
         text_as_of=str(as_of_ms) if as_of_ms is not None else None; return await self.db.rpc("research_sw1_scan_frozen",{"p_as_of_ms":text_as_of,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
-    async def live_imbalance_signal(self,sample_limit:int)->list[dict[str,Any]]: return await self.db.rpc("research_live_imbalance_signal",{"p_sample_limit":sample_limit})
-=======
-        text_as_of=str(as_of_ms) if as_of_ms is not None else None
-        return await self.db.rpc("research_sw1_scan_frozen",{"p_as_of_ms":text_as_of,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_funding_lookback":funding_lookback})
     async def hmr1_scan(self,oos_start_ms:int,as_of_ms:int,fee_bps:float=4.0,slippage_bps:float=1.0,stress_round_trip_bps:float=12.0)->list[dict[str,Any]]:
         return await self.db.rpc("research_hmr1_scan_frozen",{"p_oos_start_ms":oos_start_ms,"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_stress_round_trip_bps":stress_round_trip_bps})
-    async def live_imbalance_signal(self,sample_limit:int)->list[dict[str,Any]]:
-        return await self.db.rpc("research_live_imbalance_signal",{"p_sample_limit":sample_limit})
+    async def live_imbalance_signal(self,sample_limit:int)->list[dict[str,Any]]: return await self.db.rpc("research_live_imbalance_signal",{"p_sample_limit":sample_limit})
 
-PUBLIC_AGGREGATE_FIELDS = (
-    "gross_profit", "gross_loss", "net_profit", "closed_observations",
-    "wins", "losses", "win_rate", "average_outcome", "profit_factor",
-    "maximum_drawdown", "status", "trading_enabled",
-)
->>>>>>> f15f139 (feat: freeze and implement H-MR1 mean reversion research path)
 
 PUBLIC_AGGREGATE_FIELDS=("gross_profit","gross_loss","net_profit","closed_observations","wins","losses","win_rate","average_outcome","profit_factor","maximum_drawdown","status","trading_enabled")
 def public_aggregate_metrics(row:dict[str,Any]|None)->dict[str,Any]:
