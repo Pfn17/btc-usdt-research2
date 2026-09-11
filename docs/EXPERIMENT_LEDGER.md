@@ -80,19 +80,17 @@ H-FB2 = KILL.
 
 Do not run Q80/Q20, alternative holding periods, sign-follow variants, regime filters, or combined indicators as follow-ups to this family.
 
-## Next Allowed Work — Option A
+## Next Allowed Work — H-MR1
 
-Next work may be exactly **one OHLCV/HTF hypothesis (H-FB3)**.
+The next OHLCV hypothesis is **H-MR1 — Intraday Extreme-Candle Mean Reversion**. It is a new reversal mechanism, not a continuation or funding-family follow-up.
 
-Before querying:
-1. Write the mechanism/story.
-2. Freeze every material knob: feature definition, timeframe, entry, exit/horizon, train/OOS split, costs, latency, and pass/kill gate.
-3. Use existing OHLCV data only.
-4. Do not inspect outcomes before the specification is frozen.
-5. Query once for discovery, then validate on untouched OOS.
-6. No infrastructure build unless the candidate passes Stage 2.
+The specification is frozen in `docs/H-MR1_PREREGISTRATION.md` and implemented as a separate read-only RPC:
 
-The exact H-FB3 specification is **not yet chosen** and must be frozen before testing.
+`research_hmr1_scan_frozen(bigint,bigint,numeric,numeric,numeric)`
+
+Frozen controls include the train-only 95th percentile of absolute 15-minute returns, opposite-direction entry, one-hour exit, chronological non-overlap, explicit OOS cutoff, 10 bps baseline cost, 12 bps stress cost, weekly/direction breakdowns, and predeclared promotion/kill gates. The manual API route is `/api/v1/research/hmr1` and is not wired into the dashboard.
+
+Current status: **FROZEN / IMPLEMENTED / UNRUN**. No H-MR1 outcome has been queried by this implementation. An independent verifier must inspect the migration and API before the first scan. Any result must be recorded as a new hypothesis row for project-wide multiple-testing accounting.
 
 ## Infrastructure Debt
 
