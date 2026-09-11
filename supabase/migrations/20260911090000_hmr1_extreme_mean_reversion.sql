@@ -34,82 +34,67 @@ WITH params AS (
          greatest(0,p_stress_round_trip_bps)::numeric AS stress_rt_bps
 ),
 ordered AS (
-  SELECT o.open_time_ms, o.open, o.close,
+  SELECT o.open_time_ms,o.open,o.close,
          lag(o.close,15) OVER (ORDER BY o.open_time_ms) AS close_15m_ago
-  FROM ohlcv_1m o CROSS JOIN params p
-  WHERE o.symbol='BTCUSDT' AND o.interval='1m'
-    AND o.open_time_ms <= p.as_of_ms
+  FROM public.ohlcv_1m o CROSS JOIN params p
+  WHERE o.symbol='BTCUSDT' AND o.interval='1m' AND o.open_time_ms<=p.as_of_ms
 ),
 returns AS (
-  SELECT x.*,
-         10000.0*(x.close/x.close_15m_ago-1.0) AS return_15m_bps
-  FROM ordered x
-  WHERE x.close_15m_ago IS NOT NULL AND x.close_15m_ago > 0
+  SELECT x.*,10000.0*(x.close/x.close_15m_ago-1.0) AS return_15m_bps
+  FROM ordered x WHERE x.close_15m_ago IS NOT NULL AND x.close_15m_ago>0
 ),
 train_threshold AS (
   SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY abs(r.return_15m_bps)) AS threshold_bps
-  FROM returns r CROSS JOIN params p
-  WHERE r.open_time_ms < p.oos_start_ms
+  FROM returns r CROSS JOIN params p WHERE r.open_time_ms<p.oos_start_ms
 ),
 raw_candidates AS (
   SELECT r.open_time_ms AS trigger_ms,
-         CASE WHEN r.return_15m_bps > 0 THEN 'SHORT' ELSE 'LONG' END AS direction
+         CASE WHEN r.return_15m_bps>0 THEN 'SHORT' ELSE 'LONG' END AS trade_direction
   FROM returns r CROSS JOIN params p CROSS JOIN train_threshold t
-  WHERE r.open_time_ms < p.as_of_ms
-    AND r.open_time_ms >= p.oos_start_ms
-    AND abs(r.return_15m_bps) >= t.threshold_bps
+  WHERE r.open_time_ms<p.as_of_ms AND r.open_time_ms>=p.oos_start_ms AND abs(r.return_15m_bps)>=t.threshold_bps
 ),
 with_fills AS (
-  SELECT c.trigger_ms, c.direction, e.entry_ms, e.entry_price, x.exit_ms, x.exit_price
+  SELECT c.trigger_ms,c.trade_direction,e.entry_ms,e.entry_price,x.exit_ms,x.exit_price
   FROM raw_candidates c
   JOIN LATERAL (
-    SELECT o.open_time_ms AS entry_ms, o.open AS entry_price
-    FROM ohlcv_1m o
+    SELECT o.open_time_ms AS entry_ms,o.open AS entry_price
+    FROM public.ohlcv_1m o
     WHERE o.symbol='BTCUSDT' AND o.interval='1m'
-      AND o.open_time_ms >= c.trigger_ms + 60000
-      AND o.open_time_ms <= c.trigger_ms + 3600000
+      AND o.open_time_ms>=c.trigger_ms+60000 AND o.open_time_ms<=c.trigger_ms+3600000
     ORDER BY o.open_time_ms LIMIT 1
   ) e ON true
   JOIN LATERAL (
-    SELECT o.open_time_ms AS exit_ms, o.close AS exit_price
-    FROM ohlcv_1m o
+    SELECT o.open_time_ms AS exit_ms,o.close AS exit_price
+    FROM public.ohlcv_1m o
     WHERE o.symbol='BTCUSDT' AND o.interval='1m'
-      AND o.open_time_ms >= e.entry_ms + 3600000
-      AND o.open_time_ms <= e.entry_ms + 7200000
+      AND o.open_time_ms>=e.entry_ms+3600000 AND o.open_time_ms<=e.entry_ms+7200000
     ORDER BY o.open_time_ms LIMIT 1
   ) x ON true
 ),
 nonoverlap AS (
   SELECT z.*
-  FROM (
-    SELECT f.*, lag(f.exit_ms) OVER (ORDER BY f.entry_ms) AS previous_exit_ms
-    FROM with_fills f
-  ) z
-  WHERE z.previous_exit_ms IS NULL OR z.entry_ms >= z.previous_exit_ms
+  FROM (SELECT f.*,lag(f.exit_ms) OVER (ORDER BY f.entry_ms) AS previous_exit_ms FROM with_fills f) z
+  WHERE z.previous_exit_ms IS NULL OR z.entry_ms>=z.previous_exit_ms
 ),
 scored AS (
-  SELECT n.*,
-         10000.0 * (CASE WHEN n.direction='LONG' THEN 1 ELSE -1 END)
-           * (n.exit_price-n.entry_price)/NULLIF(n.entry_price,0) AS gross_bps
+  SELECT n.*,10000.0*(CASE WHEN n.trade_direction='LONG' THEN 1 ELSE -1 END)
+    *(n.exit_price-n.entry_price)/NULLIF(n.entry_price,0) AS gross_bps
   FROM nonoverlap n
 ),
 net AS (
-  SELECT s.*,
-         s.gross_bps - 2*(p.fee_bps+p.slippage_bps) AS net_bps,
-         s.gross_bps - p.stress_rt_bps AS stress_net_bps,
+  SELECT s.*,s.gross_bps-2*(p.fee_bps+p.slippage_bps) AS net_bps,
+         s.gross_bps-p.stress_rt_bps AS stress_net_bps,
          extract(isoyear FROM to_timestamp(s.entry_ms/1000.0))::int AS iso_year,
          extract(week FROM to_timestamp(s.entry_ms/1000.0))::int AS iso_week
   FROM scored s CROSS JOIN params p
 ),
 rows AS (
-  SELECT 'overall'::text AS bucket, 'ALL'::text AS direction, n.* FROM net n
-  UNION ALL
-  SELECT 'week_'||iso_year||'_W'||lpad(iso_week::text,2,'0'), 'ALL', n.* FROM net n
-  UNION ALL
-  SELECT 'direction'::text, n.direction, n.* FROM net n
+  SELECT 'overall'::text AS result_bucket,'ALL'::text AS result_direction,n.* FROM net n
+  UNION ALL SELECT 'week_'||iso_year||'_W'||lpad(iso_week::text,2,'0'),'ALL',n.* FROM net n
+  UNION ALL SELECT 'direction'::text,n.trade_direction,n.* FROM net n
 ),
 stats AS (
-  SELECT r.bucket, r.direction, count(*)::bigint AS n,
+  SELECT r.result_bucket,r.result_direction,count(*)::bigint AS n,
          avg(r.gross_bps) AS mean_gross_bps,
          avg(r.net_bps) AS mean_net_bps,
          avg(r.stress_net_bps) AS mean_stress_net_bps,
@@ -118,20 +103,25 @@ stats AS (
          avg(r.net_bps)+1.96*sqrt(greatest(0,coalesce(variance(r.net_bps),0))/nullif(count(*),0)) AS net_ci95_high,
          avg(r.stress_net_bps)-1.96*sqrt(greatest(0,coalesce(variance(r.stress_net_bps),0))/nullif(count(*),0)) AS stress_ci95_low,
          avg(r.stress_net_bps)+1.96*sqrt(greatest(0,coalesce(variance(r.stress_net_bps),0))/nullif(count(*),0)) AS stress_ci95_high,
-         CASE WHEN r.bucket='overall' THEN (
+         CASE WHEN r.result_bucket='overall' THEN (
            SELECT count(*)::bigint FROM (
              SELECT iso_year,iso_week FROM net GROUP BY iso_year,iso_week HAVING avg(net_bps)>0
            ) pw
          ) ELSE 0::bigint END AS positive_weeks,
-         CASE WHEN r.bucket='overall' THEN (
+         CASE WHEN r.result_bucket='overall' THEN (
            SELECT count(*)::bigint FROM (SELECT iso_year,iso_week FROM net GROUP BY iso_year,iso_week) tw
          ) ELSE 0::bigint END AS total_weeks,
          min(r.entry_ms)::bigint AS first_entry_ms,
          max(r.entry_ms)::bigint AS last_entry_ms
-  FROM rows r GROUP BY r.bucket,r.direction
+  FROM rows r GROUP BY r.result_bucket,r.result_direction
 )
-SELECT * FROM stats
-ORDER BY CASE WHEN bucket='overall' THEN 0 WHEN bucket='direction' THEN 2 ELSE 1 END,bucket,direction;
+SELECT s.result_bucket AS bucket,s.result_direction AS direction,s.n,s.mean_gross_bps,s.mean_net_bps,
+       s.mean_stress_net_bps,s.win_rate,s.net_ci95_low,s.net_ci95_high,
+       s.stress_ci95_low,s.stress_ci95_high,s.positive_weeks,s.total_weeks,
+       s.first_entry_ms,s.last_entry_ms
+FROM stats s
+ORDER BY CASE WHEN s.result_bucket='overall' THEN 0 WHEN s.result_bucket='direction' THEN 2 ELSE 1 END,
+         s.result_bucket,s.result_direction;
 $function$;
 
 REVOKE ALL ON FUNCTION public.research_hmr1_scan_frozen(bigint,bigint,numeric,numeric,numeric) FROM PUBLIC;
