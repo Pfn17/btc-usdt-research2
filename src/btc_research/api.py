@@ -78,6 +78,10 @@ class LiveAPI:
         return await self.db.rpc("research_hmr1_scan_frozen",{"p_oos_start_ms":oos_start_ms,"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_stress_round_trip_bps":stress_round_trip_bps})
     async def hmr1_readiness(self,as_of_ms:int,p_oos_start_ms:int|None=None)->list[dict[str,Any]]:
         return await self.db.rpc("research_hmr1_readiness",{"p_as_of_ms":as_of_ms,"p_oos_start_ms":p_oos_start_ms})
+    async def hvol1_scan(self,oos_start_ms:int,as_of_ms:int,fee_bps:float=4.0,slippage_bps:float=1.0,stress_round_trip_bps:float=12.0)->list[dict[str,Any]]:
+        return await self.db.rpc("research_hvol1_scan_frozen",{"p_oos_start_ms":oos_start_ms,"p_as_of_ms":as_of_ms,"p_fee_bps":fee_bps,"p_slippage_bps":slippage_bps,"p_stress_round_trip_bps":stress_round_trip_bps})
+    async def hvol1_readiness(self,as_of_ms:int,p_oos_start_ms:int|None=None)->list[dict[str,Any]]:
+        return await self.db.rpc("research_hvol1_readiness",{"p_as_of_ms":as_of_ms,"p_oos_start_ms":p_oos_start_ms})
     async def live_imbalance_signal(self,sample_limit:int)->list[dict[str,Any]]: return await self.db.rpc("research_live_imbalance_signal",{"p_sample_limit":sample_limit})
 
 
@@ -215,6 +219,16 @@ async def research_hmr1_readiness(p_oos_start_ms:int|None=Query(None,ge=0))->dic
         rows=await app.state.live.hmr1_readiness(as_of_ms,p_oos_start_ms)
         return {"status":"READINESS_ONLY","data":rows[0] if rows else None,"trading_enabled":False,"outcome_run":False}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-MR1 readiness unavailable") from exc
+@app.get("/api/v1/research/hvol1/readiness")
+async def research_hvol1_readiness(p_oos_start_ms:int|None=Query(None,ge=0))->dict[str,Any]:
+    """Readiness-only H-VOL1 surface; this route never runs the outcome scan."""
+    try:
+        latest=await app.state.live.latest_ohlcv(1)
+        if not latest:return {"status":"NO_DATA","data":None,"trading_enabled":False,"outcome_run":False,"authorization":"NOT GRANTED"}
+        as_of_ms=int(latest[0]["open_time_ms"])
+        rows=await app.state.live.hvol1_readiness(as_of_ms,p_oos_start_ms)
+        return {"status":"READINESS_ONLY","data":rows[0] if rows else None,"trading_enabled":False,"outcome_run":False,"authorization":"NOT GRANTED"}
+    except Exception as exc:raise HTTPException(status_code=503,detail="H-VOL1 readiness unavailable") from exc
 @app.get("/api/v1/research/hmr1")
 async def research_hmr1(
     oos_start_ms:int=Query(...,ge=0),
@@ -231,6 +245,22 @@ async def research_hmr1(
         rows=await app.state.live.hmr1_scan(oos_start_ms,cutoff,fee_bps,slippage_bps,stress_round_trip_bps)
         return {"status":"RESEARCH_ONLY","method":"H-MR1","data":rows,"parameters":{"oos_start_ms":oos_start_ms,"as_of_ms":cutoff,"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps,"stress_round_trip_bps":stress_round_trip_bps,"trigger_window_minutes":15,"horizon_minutes":60,"threshold_percentile":0.95},"trading_enabled":False,"research_status":"frozen_scan_unverified"}
     except Exception as exc:raise HTTPException(status_code=503,detail="H-MR1 research unavailable") from exc
+@app.get("/api/v1/research/hvol1")
+async def research_hvol1(
+    oos_start_ms:int=Query(...,ge=0),
+    as_of_ms:int|None=Query(None,ge=0),
+    fee_bps:float=Query(4.0,ge=0,le=100),
+    slippage_bps:float=Query(1.0,ge=0,le=100),
+    stress_round_trip_bps:float=Query(12.0,ge=0,le=200),
+)->dict[str,Any]:
+    """Manual, research-only H-VOL1 scan; never called by the dashboard."""
+    try:
+        latest=await app.state.live.latest_ohlcv(1)
+        cutoff=int(as_of_ms if as_of_ms is not None else latest[0]["open_time_ms"]) if latest else None
+        if cutoff is None:return {"status":"NO_DATA","data":[],"trading_enabled":False,"research_status":"UNRUN","authorization":"NOT GRANTED"}
+        rows=await app.state.live.hvol1_scan(oos_start_ms,cutoff,fee_bps,slippage_bps,stress_round_trip_bps)
+        return {"status":"RESEARCH_ONLY","method":"H-VOL1","data":rows,"parameters":{"oos_start_ms":oos_start_ms,"as_of_ms":cutoff,"fee_bps_per_side":fee_bps,"slippage_bps_per_side":slippage_bps,"stress_round_trip_bps":stress_round_trip_bps,"range_minutes":120,"horizon_minutes":120,"taker_ratio_p90_p10_train_only":True},"trading_enabled":False,"research_status":"outcome_requires_independent_authorization","authorization":"NOT GRANTED"}
+    except Exception as exc:raise HTTPException(status_code=503,detail="H-VOL1 research unavailable") from exc
 @app.get("/api/v1/research/edge-scan")
 async def research_edge_scan(horizon_seconds:int=Query(60,ge=60,le=300),fee_bps:float|None=Query(None,ge=0,le=100),sample_limit:int=Query(50000,ge=5000,le=200000),as_of_event_time_ms:int|None=Query(None,ge=0))->dict[str,Any]:
     if horizon_seconds not in (60,120,180,300):raise HTTPException(status_code=400,detail="horizon_seconds must be one of 60, 120, 180, 300")
