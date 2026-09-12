@@ -48,6 +48,10 @@ def test_hvol1_api_has_manual_scan_and_dashboard_readiness_only():
     assert "/api/v1/research/hvol1'" not in dashboard
     for token in ("H-VOL1", "hvol1Coverage", "hvol1Range", "hvol1P90", "hvol1P10", "hvol1Boundary", "hvol1Outcome", "hvol1Authorization"):
         assert token in dashboard
+    assert 'hvol1Implementation">NOT VERIFIED' in dashboard
+    assert 'hvol1Implementation\',\'READINESS COMPUTED' in dashboard
+    assert 'hvol1Status\',\'READINESS UNAVAILABLE' in dashboard
+    assert 'hvol1Status\',x.status||\'NOT_READY\'' in dashboard
 
 
 def test_hvol1_does_not_add_execution_path():
