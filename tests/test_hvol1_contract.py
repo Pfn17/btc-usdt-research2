@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "supabase/migrations/20260912100000_hvol1_source_reconciliation.sql"
-READINESS_MIGRATION = ROOT / "supabase/migrations/20260913120000_hvol1_readiness_temporal_gate.sql"
+READINESS_MIGRATION = ROOT / "supabase/migrations/20260913111903_hvol1_readiness_temporal_gate_v2.sql"
 PREREG = ROOT / "docs/H-VOL1_PREREGISTRATION.md"
 API = ROOT / "src/btc_research/api.py"
 DASHBOARD = ROOT / "dashboard/index.html"
