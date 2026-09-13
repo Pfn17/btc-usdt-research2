@@ -2,6 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "supabase/migrations/20260912100000_hvol1_source_reconciliation.sql"
+READINESS_MIGRATION = ROOT / "supabase/migrations/20260913120000_hvol1_readiness_temporal_gate.sql"
 PREREG = ROOT / "docs/H-VOL1_PREREGISTRATION.md"
 API = ROOT / "src/btc_research/api.py"
 DASHBOARD = ROOT / "dashboard/index.html"
@@ -24,6 +25,19 @@ def test_hvol1_migration_freezes_temporal_breakout_and_taker_flow_rules():
     assert "e.open_time_ms+120*60*1000" in sql
     assert "f.entry_ms>=accepted.exit_ms" in sql
     assert "10::numeric" in sql and "12::numeric" in sql
+
+
+def test_hvol1_readiness_requires_exact_real_minute_predecessor_and_continuity():
+    sql = READINESS_MIGRATION.read_text(encoding="utf-8")
+    assert "lag(o.open_time_ms,120)" in sql
+    assert "lag(o.open_time_ms,1)" in sql
+    assert "b.prior_first_ms=b.open_time_ms-120*60000" in sql
+    assert "b.prior_last_ms=b.open_time_ms-60000" in sql
+    assert "count(*) FILTER (WHERE prev_ms IS NOT NULL AND open_time_ms-prev_ms<>60000)" in sql
+    assert "c.gap_count=0 AS continuity_ok" in sql
+    assert "AND m.continuity_ok" in sql
+    assert "READY_FOR_INDEPENDENT_AUDIT" in sql
+    assert "false,'NOT GRANTED'" in sql
 
 
 def test_hvol1_preregistration_blocks_outcome_until_boundary_and_audit():
