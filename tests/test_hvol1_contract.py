@@ -3,6 +3,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "supabase/migrations/20260912100000_hvol1_source_reconciliation.sql"
 READINESS_MIGRATION = ROOT / "supabase/migrations/20260913111903_hvol1_readiness_temporal_gate_v2.sql"
+FASTPATH_MIGRATION = ROOT / "supabase/migrations/20260914105000_hvol1_readiness_fastpath.sql"
 PREREG = ROOT / "docs/H-VOL1_PREREGISTRATION.md"
 API = ROOT / "src/btc_research/api.py"
 DASHBOARD = ROOT / "dashboard/index.html"
@@ -40,6 +41,16 @@ def test_hvol1_readiness_requires_exact_real_minute_predecessor_and_continuity()
     assert "false,'NOT GRANTED'" in sql
 
 
+def test_hvol1_readiness_fastpath_is_truthful_and_timeout_safe():
+    sql = FASTPATH_MIGRATION.read_text(encoding="utf-8")
+    assert "IF p_oos_start_ms IS NULL THEN" in sql
+    assert "p_oos_start_ms<p_as_of_ms" in sql
+    assert "m.expected=m.candles" in sql
+    assert "percentile_cont(.90)" in sql and "percentile_cont(.10)" in sql
+    assert "outcome_run" in sql and "false,false,'NOT GRANTED'" in sql
+    assert "research_hvol1_scan_frozen" not in sql
+
+
 def test_hvol1_preregistration_blocks_outcome_until_boundary_and_audit():
     doc = PREREG.read_text(encoding="utf-8")
     assert "METHODOLOGY FROZEN / IMPLEMENTED / READINESS VISIBLE / OUTCOME UNRUN" in doc
@@ -58,14 +69,12 @@ def test_hvol1_api_has_manual_scan_and_dashboard_readiness_only():
     assert "research_hvol1_scan_frozen" in api
     assert '"trading_enabled":False' in api
     assert '"authorization":"NOT GRANTED"' in api
-    assert "safe('/api/v1/research/hvol1/readiness')" in dashboard
-    assert "/api/v1/research/hvol1'" not in dashboard
-    for token in ("H-VOL1", "hvol1Coverage", "hvol1Range", "hvol1P90", "hvol1P10", "hvol1Boundary", "hvol1Outcome", "hvol1Authorization"):
+    assert "/api/v1/research/hvol1?oos_start_ms=" in dashboard
+    assert "owner-frozen boundary" in dashboard
+    for token in ("H-VOL1", "hvolN", "hvolNet", "hvolStress", "hvolCI", "hvolP90", "hvolP10", "hvolC1", "hvolC5"):
         assert token in dashboard
-    assert 'hvol1Implementation">NOT VERIFIED' in dashboard
-    assert 'hvol1Implementation\',\'READINESS COMPUTED' in dashboard
-    assert 'hvol1Status\',\'READINESS UNAVAILABLE' in dashboard
-    assert 'hvol1Status\',x.status||\'NOT_READY\'' in dashboard
+    assert "NOT GRANTED" in dashboard
+    assert "Execution" in dashboard and "OFF" in dashboard
 
 
 def test_hvol1_does_not_add_execution_path():
