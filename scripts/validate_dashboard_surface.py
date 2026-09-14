@@ -10,12 +10,11 @@ assert "toLocaleString('en-US'" in s
 for forbidden in ("radial-gradient", "linear-gradient", "Find edges.", "Tell AI", "Binance public API", "Supabase", "Railway", "Vercel", "Project memory", "Owner direction", "/api/v1/governance/summary"):
     assert forbidden not in s, forbidden
 for required in (
-    "No validated edge", "Research archive", "Execution", "OFF", "KILL",
-    "INCONCLUSIVE", "UNAVAILABLE", "Never inferred", "Loading current research data",
-    "Current position", "Evidence gate", "System status",
-    "Reference lineage", "Independent lineage", "/api/v1/research/hfb1",
-    "/api/v1/research/sw1-claude", "/api/v1/research/sw1-manus",
-    "zero decision boundary", "evidence.stress_net_bps", "hfb3Range",
+    "No validated edge", "Research Archive", "Execution", "OFF", "KILL",
+    "UNAVAILABLE", "backend-derived", "owner-frozen boundary",
+    "Owner-frozen evaluation", "H-MR1", "H-VOL1",
+    "/api/v1/research/hmr1", "/api/v1/research/hvol1",
+    "Training P90", "Contamination handling", "Independent verifier separate from executor",
 ):
     assert required in s, required
 assert len(re.findall(r"<script>", s)) == 1
