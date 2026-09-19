@@ -65,3 +65,12 @@ Task `dashboard-audit-cleanup-2026-09-09` is `claimed_done` on branch `v0/modern
 Task `dashboard-owner-first-total-refresh-2026-09-09` is implemented by Manus in commit `b416ae01fb2e475e85357672b5c141fe46d273b4` and pushed to `main`. The batch changed only `dashboard/index.html`, `landing/index.html`, dashboard contract tests, and a reusable dashboard validator. It did not change Supabase schema/data, research RPCs, experiment results, or execution behavior.
 
 The canonical owner surface is now the root dashboard with Story → Terminal → Visual. Story provides the briefing, Terminal exposes backend-derived research evidence and frozen comparison, and Visual exposes only persisted market observations. The legacy `/lab` entry point redirects to `/`. Local evidence: `53 passed, 2 skipped`; dashboard validator and JavaScript syntax check passed. Independent post-deploy verification remains a separate boundary and must not be inferred from this writer's claim.
+
+
+## Final dashboard runtime gap closure — 2026-09-19
+
+The independent audit found and corrected a presentation/runtime regression in the latest research-control-room surface. H-MR1 and H-VOL1 now remain readiness-only in the browser; the dashboard does not call `research_hmr1_scan_frozen`, `research_hvol1_scan_frozen`, or `research_hvol1_scan_public`. The owner-facing cards show status, continuity, missing minutes, coverage, entry/exit availability, boundary state, and `UNRUN` outcome state from Supabase readiness facts. A malformed Binance public ticker assignment was also corrected so the second script block parses and the read-only market check can execute.
+
+Live Supabase verification at the current OHLCV boundary returned H-MR1 `NOT_READY` with 141,772 candles, 84 missing minutes, no frozen OOS boundary, and `outcome_run=false`; H-VOL1 returned the same gap state, 141,065 complete range windows, 141,772 valid taker ratios, `outcome_run=false`, and `authorization=NOT GRANTED`. Binance public Futures ticker returned a current BTCUSDT read successfully. No scan, order, promotion, or result mutation was performed.
+
+The Vercel production deployment observed before this release was `READY` at commit `b0b12bf6eb27ed258b2875f36b3b6c8515e9bb8d`; final verification must replace this observation with the new commit/deployment evidence.

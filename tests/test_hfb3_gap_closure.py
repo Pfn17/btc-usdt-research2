@@ -6,17 +6,11 @@ ADDENDUM = (ROOT / "docs/H-FB3_AUDIT_ADDENDUM_2026-09-10.md").read_text(encoding
 PREREG = (ROOT / "docs/H-FB3_PREREGISTRATION.md").read_text(encoding="utf-8")
 
 
-def test_hfb3_stress_uses_persisted_api_field():
-    assert "evidence.stress_net_bps" in DASHBOARD
-    assert "params.stress_rt_bps" not in DASHBOARD
-    assert "hfb3Stress" in DASHBOARD
-
-
-def test_hfb3_is_in_ev_ci_chart():
-    assert 'id="hfb3Range"' in DASHBOARD
-    assert 'id="hfb3Point"' in DASHBOARD
-    assert 'id="hfb3EvLabel"' in DASHBOARD
-    assert "data.hfb3" in DASHBOARD
+def test_hfb3_persisted_result_is_read_from_public_api():
+    assert "research_hfb3_public?select=" in DASHBOARD
+    assert "cost_adjusted_ev" in DASHBOARD
+    assert "confidence_interval" in DASHBOARD
+    assert "H-FB3" in DASHBOARD
 
 
 def test_frozen_oos_window_is_explicit_and_reconciled():

@@ -69,9 +69,12 @@ def test_hvol1_api_has_manual_scan_and_dashboard_readiness_only():
     assert "research_hvol1_scan_frozen" in api
     assert '"trading_enabled":False' in api
     assert '"authorization":"NOT GRANTED"' in api
-    assert "/api/v1/research/hvol1?oos_start_ms=" in dashboard
-    assert "owner-frozen boundary" in dashboard
-    for token in ("H-VOL1", "hvolN", "hvolNet", "hvolStress", "hvolCI", "hvolP90", "hvolP10", "hvolC1", "hvolC5"):
+    runtime = dashboard[dashboard.index("if(k==='H-VOL1')"):dashboard.index("if(k==='HC2_CONDITIONAL_STATE')")]
+    assert "research_hvol1_readiness" in runtime
+    assert "READINESS ONLY · OUTCOME UNRUN" in runtime
+    assert "research_hvol1_scan_public" not in runtime
+    assert "research_hvol1_scan_frozen" not in runtime
+    for token in ("H-VOL1", "readinessMetrics", "missing_minute_count", "oos_boundary_frozen"):
         assert token in dashboard
     assert "NOT GRANTED" in dashboard
     assert "Execution" in dashboard and "OFF" in dashboard

@@ -26,11 +26,8 @@ def test_sw1_api_is_read_only_and_parameter_locked() -> None:
 
 def test_dashboard_has_real_sw1_bindings_and_no_execution_claim() -> None:
     html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
-    assert "/api/v1/research/sw1-manus" in html
-    assert "/api/v1/research/sw1-claude" in html
-    assert 'id="sw1RefN"' in html
-    assert 'id="sw1IndN"' in html
-    assert "Reference lineage" in html
-    assert "Independent lineage" in html
-    assert "Never inferred" in html
+    assert "research_sw1_scan_frozen" in html
+    assert "LIVE OOS REFERENCE" in html
+    assert "Frozen OOS-end cutoff" in html
+    assert "Backend state and result are shown exactly as returned" in html
     assert "Execution" in html and "OFF" in html

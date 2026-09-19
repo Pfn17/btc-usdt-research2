@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = ROOT / "supabase/migrations/20260911090000_hmr1_extreme_mean_reversion.sql"
 PREREG = ROOT / "docs/H-MR1_PREREGISTRATION.md"
 API = ROOT / "src/btc_research/api.py"
+DASHBOARD = ROOT / "dashboard/index.html"
 
 
 def test_hmr1_has_separate_preregistration_and_frozen_rpc():
@@ -30,9 +31,18 @@ def test_hmr1_api_is_manual_and_read_only():
     assert "setInterval" not in api[api.index('async def research_hmr1'):]
 
 
-def test_hmr1_does_not_modify_frontend():
-    dashboard = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
-    landing = (ROOT / "landing/index.html").read_text(encoding="utf-8")
-    assert "safe('/api/v1/research/hmr1/readiness')" in dashboard
-    assert "safe('/api/v1/research/hmr1')" not in dashboard
-    assert "/api/v1/research/hmr1" not in landing
+def test_hmr1_dashboard_reads_readiness_without_running_outcome():
+    dashboard = DASHBOARD.read_text(encoding="utf-8")
+    runtime = dashboard[dashboard.index("if(k==='H-MR1')"):dashboard.index("if(k==='H-VOL1')")]
+    assert "research_hmr1_readiness" in runtime
+    assert "READINESS ONLY · OUTCOME UNRUN" in runtime
+    assert "research_hmr1_scan_frozen" not in runtime
+    assert "research_hmr1" in dashboard
+
+
+def test_hmr1_does_not_add_execution_path():
+    dashboard = DASHBOARD.read_text(encoding="utf-8")
+    runtime = dashboard[dashboard.index("if(k==='H-MR1')"):dashboard.index("if(k==='H-VOL1')")]
+    assert "research_hmr1_scan_frozen" not in runtime
+    assert "createOrder" not in runtime and "place_order" not in runtime
+    assert "OFF" in dashboard

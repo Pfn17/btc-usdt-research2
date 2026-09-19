@@ -50,3 +50,15 @@ The legacy `/lab` entry point now redirects to the canonical dashboard instead o
 ### Verification evidence
 
 The repository validator passed, dashboard JavaScript passed `node --check`, and the full local suite passed with `53 passed, 2 skipped`. The production read-only endpoints returned live responses for `/health`, `/api/v1/market/ohlcv/latest`, `/api/v1/funding/latest`, and `/api/v1/signals/log`. The production deployment/runtime after this commit still requires an independent post-deploy check; local validation is not marked as independent verification.
+
+
+## Final runtime gap closure — 2026-09-19
+
+**Writer:** Manus
+**Scope:** dashboard runtime integrity only; no Supabase schema, research result, hypothesis parameters, or execution path changed.
+
+The current main dashboard was independently reviewed against the live Supabase readiness payloads. Two concrete defects were found: the dashboard runtime attempted to call outcome RPCs for H-MR1 and H-VOL1 even though both are `NOT_READY / outcome_run=false / authorization not granted`, and the Binance read-only script contained a malformed JavaScript literal that prevented the second script block from parsing. The fix changes both hypothesis cards to call readiness RPCs only, renders backend-derived readiness facts without profitability metrics, and restores the Binance public ticker assignment.
+
+Local evidence after the fix: `68 passed, 2 skipped`; both dashboard script blocks pass `node --check`; readiness-only and Binance runtime guards pass; `git diff --check` passes. The two skipped tests are existing Supabase service-role integration tests unavailable in this environment. Live Supabase evidence remains `H-MR1 NOT_READY` and `H-VOL1 NOT_READY`, with 84 missing minutes, no OOS boundary, no outcome run, and no authorization. No result was changed or newly computed.
+
+Production was independently observed before this patch at Vercel deployment `dpl_DVeUecUWovENNHaNnDq9fvLjDLmb`, state `READY`, source commit `b0b12bf6eb27ed258b2875f36b3b6c8515e9bb8d`. Post-push verification must confirm the new commit and browser runtime before this batch can be marked verified.
