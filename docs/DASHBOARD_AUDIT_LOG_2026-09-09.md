@@ -62,3 +62,10 @@ The current main dashboard was independently reviewed against the live Supabase 
 Local evidence after the fix: `68 passed, 2 skipped`; both dashboard script blocks pass `node --check`; readiness-only and Binance runtime guards pass; `git diff --check` passes. The two skipped tests are existing Supabase service-role integration tests unavailable in this environment. Live Supabase evidence remains `H-MR1 NOT_READY` and `H-VOL1 NOT_READY`, with 84 missing minutes, no OOS boundary, no outcome run, and no authorization. No result was changed or newly computed.
 
 Production was independently observed before this patch at Vercel deployment `dpl_DVeUecUWovENNHaNnDq9fvLjDLmb`, state `READY`, source commit `b0b12bf6eb27ed258b2875f36b3b6c8515e9bb8d`. Post-push verification must confirm the new commit and browser runtime before this batch can be marked verified.
+
+
+## Registry visibility fix — 2026-09-20
+
+The post-deploy browser check exposed a real owner-facing mismatch: Supabase contained eight rows in `research_hypotheses`, but the public REST read returned zero rows because the table had RLS enabled without a SELECT policy. The dashboard consequently displayed `0 REGISTERED`, which was false as an inventory statement. Migration `20260919221500_research_hypotheses_public_read.sql` adds a SELECT-only policy for `anon` and `authenticated`, grants only SELECT, and explicitly revokes write privileges. No result data, execution permission, or hypothesis mutation path was opened.
+
+Live verification after applying the migration: public REST returned HTTP 200 and `8` hypothesis rows. Local evidence after adding the regression guard: `69 passed, 2 skipped`; dashboard JavaScript and readiness-only guards passed. Source was pushed in commit `d16c6011b04a9581bfa0c97b5b8d977cb7fd040f`.
