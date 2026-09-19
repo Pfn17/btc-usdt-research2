@@ -83,3 +83,10 @@ The current GitHub source is `d0b8086` before the provider-label patch. A stale 
 The dashboard provider room was corrected to avoid converting old snapshots into current claims: Vercel is `READY · OBSERVED` at `d16c601`; Railway is `UNVERIFIED` because its console was not readable in this session. Supabase current read-only counts match the owner surface: 141,772 OHLCV, 10,510 basis, 288 funding, and 8 hypotheses. Local validation is complete: 70 passed, 2 skipped, JavaScript/readiness guards passed, and diff hygiene passed.
 
 This checkpoint records presentation/evidence correction only. It does not promote H-MR1, execute any scan, alter a frozen result, enable execution, or delete historical coordination rows.
+
+
+## Final release evidence — 2026-09-20
+
+The release sequence is complete on GitHub `main`: `f85f536` corrected stale provider claims and `c2bedd9` removed the pinned deployment SHA from the owner surface. Vercel production deployment `dpl_BiGpJC66AtjrgaV5qC7ttBQgHqqL` for `c2bedd9a7c8c32b781ce10b6aee49a9644f6d7f1` is `READY`; canonical HTML contains the corrected provider semantics and no obsolete `BUILDING*`/`FAILED*` labels. Browser runtime reached `LIVE` with no console output, and production H-VOL1 readiness remained `NOT_READY` / `outcome_run=false`.
+
+No H-MR1 or H-VOL1 outcome scan was executed. Supabase function identity, readiness-only API behavior, execution OFF boundary, and the research ledger remain unchanged. Historical coordination rows were preserved rather than deleted or rewritten.

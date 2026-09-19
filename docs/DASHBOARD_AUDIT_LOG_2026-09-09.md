@@ -83,3 +83,10 @@ Live read-only checks remained consistent with the dashboard boundary: Supabase 
 Validation evidence: `check_dashboard_js.py` passed; `validate_readiness_runtime.py` passed; `PYTHONPATH=src pytest -q` returned 70 passed and 2 skipped; `git diff --check` passed. The two pytest warnings are pre-existing unknown `integration` markers in `tests/test_supabase_research.py` and do not indicate a test failure.
 
 The change remains bounded to `dashboard/index.html`, `tests/test_dashboard.py`, and this append-only audit record. Deployment verification for the new commit remains a separate release step.
+
+
+## Release verification — final commit c2bedd9 — 2026-09-20
+
+Vercel production deployment `dpl_BiGpJC66AtjrgaV5qC7ttBQgHqqL` for full commit `c2bedd9a7c8c32b781ce10b6aee49a9644f6d7f1` reached `READY` and was observed under the production target. Canonical `https://btc-usdt-research2.vercel.app/` returned the corrected `READY · OBSERVED` and `UNVERIFIED` provider labels, no `BUILDING*` or `FAILED*` markers, and the read-only H-VOL1 readiness endpoint returned `NOT_READY` with `outcome_run=false`. Browser verification showed the dashboard reached `LIVE`, rendered 8 registered hypotheses and live collector facts, and the browser console had no output/errors.
+
+Railway remains intentionally labeled `UNVERIFIED`: the Railway console did not expose readable service state in this session, so the dashboard does not claim healthy or failed. This is the final evidence boundary for this release.
