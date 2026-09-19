@@ -74,3 +74,12 @@ The independent audit found and corrected a presentation/runtime regression in t
 Live Supabase verification at the current OHLCV boundary returned H-MR1 `NOT_READY` with 141,772 candles, 84 missing minutes, no frozen OOS boundary, and `outcome_run=false`; H-VOL1 returned the same gap state, 141,065 complete range windows, 141,772 valid taker ratios, `outcome_run=false`, and `authorization=NOT GRANTED`. Binance public Futures ticker returned a current BTCUSDT read successfully. No scan, order, promotion, or result mutation was performed.
 
 The Vercel production deployment observed before this release was `READY` at commit `b0b12bf6eb27ed258b2875f36b3b6c8515e9bb8d`; final verification must replace this observation with the new commit/deployment evidence.
+
+
+## Final source/evidence reconciliation — 2026-09-20
+
+The current GitHub source is `d0b8086` before the provider-label patch. A stale coordination row `hmr1-rpc-missing-2026-09-11` reported that `research_hmr1_scan_frozen` was absent, but direct production `pg_proc` inspection now shows the canonical function and the `_v2` lineage both exist, alongside `research_hmr1_readiness`. This row is historical audit evidence, not a current blocker; no outcome scan was run while reconciling it.
+
+The dashboard provider room was corrected to avoid converting old snapshots into current claims: Vercel is `READY · OBSERVED` at `d16c601`; Railway is `UNVERIFIED` because its console was not readable in this session. Supabase current read-only counts match the owner surface: 141,772 OHLCV, 10,510 basis, 288 funding, and 8 hypotheses. Local validation is complete: 70 passed, 2 skipped, JavaScript/readiness guards passed, and diff hygiene passed.
+
+This checkpoint records presentation/evidence correction only. It does not promote H-MR1, execute any scan, alter a frozen result, enable execution, or delete historical coordination rows.

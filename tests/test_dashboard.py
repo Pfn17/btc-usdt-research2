@@ -40,6 +40,16 @@ def test_dashboard_has_research_surfaces_and_safe_refresh():
     assert "linear-gradient" not in html
 
 
+def test_dashboard_provider_states_are_evidence_aware():
+    html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
+    assert "READY · OBSERVED" in html
+    assert "d16c601" in html
+    assert "RAILWAY" in html and "UNVERIFIED" in html
+    assert "BUILDING*" not in html
+    assert "FAILED*" not in html
+    assert "e5110aa" not in html
+
+
 def test_landing_page_exists_and_links_to_console():
     landing = ROOT / "landing" / "index.html"
     assert landing.is_file()

@@ -69,3 +69,17 @@ Production was independently observed before this patch at Vercel deployment `dp
 The post-deploy browser check exposed a real owner-facing mismatch: Supabase contained eight rows in `research_hypotheses`, but the public REST read returned zero rows because the table had RLS enabled without a SELECT policy. The dashboard consequently displayed `0 REGISTERED`, which was false as an inventory statement. Migration `20260919221500_research_hypotheses_public_read.sql` adds a SELECT-only policy for `anon` and `authenticated`, grants only SELECT, and explicitly revokes write privileges. No result data, execution permission, or hypothesis mutation path was opened.
 
 Live verification after applying the migration: public REST returned HTTP 200 and `8` hypothesis rows. Local evidence after adding the regression guard: `69 passed, 2 skipped`; dashboard JavaScript and readiness-only guards passed. Source was pushed in commit `d16c6011b04a9581bfa0c97b5b8d977cb7fd040f`.
+
+
+## Provider-state and live integrity correction — 2026-09-20
+
+**Writer:** Manus
+**Scope:** owner-facing dashboard presentation and evidence labeling only; no outcome scan, order path, result mutation, or research-method change.
+
+A final source audit found two stale provider labels in the infrastructure room: Vercel was still shown as `BUILDING*` at obsolete commit `e5110aa`, while Railway was shown as `FAILED*` even though the provider console was not readable in this verification session. The dashboard now labels the last independently observed Vercel deployment `READY · OBSERVED` at commit `d16c601` and labels Railway `UNVERIFIED`; it makes no unsupported health claim for Railway. The provider footer now explicitly distinguishes evidence snapshots from live provider APIs.
+
+Live read-only checks remained consistent with the dashboard boundary: Supabase returned 141,772 OHLCV rows, 10,510 basis snapshots, 288 funding events, and 8 registered hypotheses. `collector_health` most recently reported `feed_status=connected`, `integrity_status=valid`, zero sequence gaps, `latency_ms=35`, and `contamination_active=false` at its recorded update. Supabase `pg_proc` also confirms that `research_hmr1_scan_frozen(bigint,bigint,numeric,numeric,numeric)` exists in production; the older coordination note claiming it was absent is stale and should not be treated as current. No H-MR1 outcome scan was invoked.
+
+Validation evidence: `check_dashboard_js.py` passed; `validate_readiness_runtime.py` passed; `PYTHONPATH=src pytest -q` returned 70 passed and 2 skipped; `git diff --check` passed. The two pytest warnings are pre-existing unknown `integration` markers in `tests/test_supabase_research.py` and do not indicate a test failure.
+
+The change remains bounded to `dashboard/index.html`, `tests/test_dashboard.py`, and this append-only audit record. Deployment verification for the new commit remains a separate release step.
