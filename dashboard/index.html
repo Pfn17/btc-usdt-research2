@@ -13,7 +13,21 @@ section{margin-top:48px}section .eyebrow{font:9px var(--mono);letter-spacing:.16
 @media(max-width:900px){.snapshot{grid-template-columns:1.5fr 1fr 1fr}.snapshot>div:nth-child(4),.snapshot>div:nth-child(5){display:none}}
 @media(max-width:600px){main{padding:0 14px 55px}.hero{padding:42px 0 25px}.hero h1{font-size:52px}.hero-meta{gap:9px 16px}.snapshot{grid-template-columns:1fr 1fr;margin-bottom:38px}.snap-lead{grid-column:1/-1}.snapshot>div:nth-child(4),.snapshot>div:nth-child(5){display:block}.snapshot>div{padding:14px}.snap-n{font-size:20px}}
 </style>
-</head>
+<style>
+.control-room{margin-top:72px;padding-top:26px;border-top:1px solid var(--hair)}
+.room-nav{display:flex;flex-wrap:wrap;gap:0;margin:22px 0 1px;border:1px solid var(--hair);background:var(--panel)}
+.room-nav button{appearance:none;background:transparent;border:0;border-right:1px solid var(--hair);padding:10px 13px;color:#77818c;font:9px var(--mono);letter-spacing:.08em;cursor:pointer}.room-nav button.active,.room-nav button:hover{background:var(--panel2);color:#e4e8ec}
+.room-panel{display:none;border:1px solid var(--hair);border-top:0;background:var(--panel);padding:20px}.room-panel.active{display:block}
+.split{display:grid;grid-template-columns:1.5fr 1fr;gap:30px}.method-list{margin:16px 0;padding-left:20px;color:#b5bdc6;line-height:2}.method-card{border-left:1px solid var(--hair2);padding-left:18px}.method-row{display:flex;justify-content:space-between;gap:20px;padding:10px 0;border-bottom:1px solid var(--hair);font:10px var(--mono)}.neg{color:var(--neg)}.warn{color:var(--accent)}.ok{color:var(--pos)}
+.registry-grid{display:grid;gap:1px;background:var(--hair);border:1px solid var(--hair)}.registry-row{background:var(--panel);padding:14px;display:grid;grid-template-columns:180px 1fr 120px;gap:18px}.registry-row .rk{font:10px var(--mono);color:#dce1e6}.registry-row p{margin:0;color:#8d98a4;font-size:11px}.registry-row .rh{font:9px var(--mono);text-align:right;color:#77818c}
+.rule-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--hair);border:1px solid var(--hair)}.rule-grid article{padding:17px;background:var(--panel)}.rule-grid b{font:9px var(--mono);color:#dfe4e9;letter-spacing:.08em}.rule-grid p{color:#8d98a4;font-size:11px;line-height:1.65;margin-bottom:0}
+.ledger-note{padding:12px;border-left:2px solid var(--accent);background:#0d1116;color:#89939e;font-size:11px;margin-bottom:12px}.ledger-grid{display:grid;gap:1px;background:var(--hair)}.ledger-row{background:var(--panel);padding:13px;display:grid;grid-template-columns:240px 90px 1fr;gap:15px}.ledger-row b{font:10px var(--mono)}.ledger-row span{font:9px var(--mono);color:#75808b}.ledger-row p{margin:0;color:#89939e;font-size:10px}
+.process-map{display:flex;align-items:stretch;gap:7px;overflow:auto;padding:5px 0 16px}.process-node{min-width:150px;border:1px solid var(--hair2);padding:13px;background:#0a0e13}.process-node small{display:block;font:9px var(--mono);color:#68737e}.process-node b{display:block;font:11px var(--mono);margin:6px 0}.process-node span{display:block;font-size:10px;color:#7e8995}.process-map i{align-self:center;color:#555f6b;font-style:normal}.process-gates{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--hair);border:1px solid var(--hair)}.process-gates div{padding:13px;background:var(--panel)}.process-gates b{display:block;font:9px var(--mono)}.process-gates span{display:block;color:#78838e;font-size:10px;margin-top:4px}
+.agent-head{display:flex;justify-content:space-between;gap:20px;align-items:start;border-bottom:1px solid var(--hair);padding-bottom:15px}.agent-head a,.infra a{font:9px var(--mono);color:#b8c2cc;text-decoration:none}.agent-view{white-space:pre-wrap;max-height:760px;overflow:auto;color:#9ca6b1;font:10px/1.65 var(--mono);margin:18px 0 0}
+.infra-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--hair);border:1px solid var(--hair)}.infra{background:var(--panel);padding:18px}.infra-top{display:flex;justify-content:space-between;font:10px var(--mono);letter-spacing:.07em}.infra strong{display:block;font:14px var(--mono);margin:14px 0 5px;color:#dfe4e8}.infra p{min-height:48px;color:#7f8a96;font-size:11px;line-height:1.6}.infra a{display:inline-block;margin-top:10px}.infra-foot{font:9px var(--mono);color:#5f6974;padding-top:12px}
+.source-book{display:grid;gap:7px}.book-doc{border:1px solid var(--hair);background:#090d12}.book-doc summary{cursor:pointer;list-style:none;padding:13px;display:flex;justify-content:space-between;font:10px var(--mono);color:#d2d8de}.book-doc summary small{color:#626d79}.book-doc pre{margin:0;padding:16px;border-top:1px solid var(--hair);white-space:pre-wrap;overflow:auto;color:#8e99a5;font:10px/1.65 var(--mono)}
+@media(max-width:850px){.split,.rule-grid,.infra-grid,.process-gates{grid-template-columns:1fr}.registry-row{grid-template-columns:1fr}.registry-row .rh{text-align:left}.room-nav button{flex:1 0 auto}.process-map{flex-wrap:nowrap}}
+</style></head>
 <body>
 <header><div><div class="brand">HyperHan Lab</div><div class="tiny">BTCUSDT · LIVE RESEARCH CONTROL SURFACE</div></div><div id="sync" class="status gold">SYNCING PRODUCTION</div></header>
 <main>
@@ -34,7 +48,892 @@ section{margin-top:48px}section .eyebrow{font:9px var(--mono);letter-spacing:.16
 </div></section>
 <section><div class="eyebrow">03 · owner decisions</div><h2>Decision ledger</h2><div class="card table-wrap"><table class="table"><thead><tr><th>Effective</th><th>Decision</th><th>Hypothesis</th><th>Reason</th><th>Status</th></tr></thead><tbody id="decisions"><tr><td colspan="5">Reading production ledger.</td></tr></tbody></table></div></section>
 <section><div class="eyebrow">04 · contamination ledger</div><h2>Data exclusions</h2><div class="card table-wrap"><table class="table"><thead><tr><th>Start</th><th>End</th><th>Reason</th><th>Rule</th></tr></thead><tbody id="contam"><tr><td colspan="4">Reading production contamination ledger.</td></tr></tbody></table></div></section>
-</main>
+
+<section id="control-room" class="control-room">
+<div class="eyebrow">05 · SYSTEM BOOK</div>
+<h2>Research control room</h2>
+<p class="muted">The dashboard contains the research record and the operating record. Nothing below is a placeholder: repository documents are rendered from <code>main</code>; infrastructure states are observed snapshots; market data is read-only.</p>
+<nav class="room-nav" aria-label="Research control room">
+<button class="active" data-room="method">METHOD</button><button data-room="hypothesis">HYPOTHESES</button><button data-room="rules">RULES</button><button data-room="ledger">LEDGER</button><button data-room="process">PROCESS MAP</button><button data-room="agents">AGENT PROTOCOL</button><button data-room="infra">INFRA</button><button data-room="sources">SOURCE BOOK</button>
+</nav>
+<div class="room-panel active" id="room-method">
+<div class="split"><div><div class="eyebrow">METHOD CONTRACT</div><h3>Research before execution</h3><ol class="method-list"><li>Explore only existing data.</li><li>Write and freeze the hypothesis before results.</li><li>Validate on data not used for discovery.</li><li>Charge fees, slippage and declared execution costs.</li><li>Require positive net OOS EV and CI95 entirely above zero for promotion.</li><li>Kill failed candidates. Do not retune around the result.</li><li>Paper stage only follows Stage 2 evidence.</li><li>Live execution remains OFF until a separate approval boundary exists.</li></ol></div><div class="method-card"><div class="eyebrow">CURRENT METHOD STATUS</div><div class="method-row"><b>Funding family</b><span class="neg">CLOSED · 2/2 KILLED</span></div><div class="method-row"><b>H-FB3</b><span class="neg">KILLED</span></div><div class="method-row"><b>H-SW1</b><span class="warn">INCONCLUSIVE</span></div><div class="method-row"><b>H-MR1</b><span class="warn">FROZEN · UNRUN</span></div><div class="method-row"><b>H-VOL1</b><span class="warn">READINESS · UNRUN</span></div></div></div>
+</div>
+<div class="room-panel" id="room-hypothesis"><div class="registry-grid" id="roomHypotheses"><div class="empty">Loading registered hypotheses from Supabase…</div></div></div>
+<div class="room-panel" id="room-rules"><div class="rule-grid"><article><b>DATA INTEGRITY</b><p>Raw records are immutable. Exact timestamps are required. Gaps contaminate affected windows.</p></article><article><b>FREEZE</b><p>Frozen parameters cannot be changed after results are viewed. New logic receives a new hypothesis identity.</p></article><article><b>COST</b><p>Baseline project convention: 4 bps fee + 1 bps slippage per side = 10 bps round trip. Stress = 12 bps.</p></article><article><b>STATISTICS</b><p>Promotion requires positive net EV and CI95 entirely above zero plus declared temporal/regime gates.</p></article><article><b>MULTIPLE TESTING</b><p>Future confirmatory families use a predeclared hypothesis universe and prospective Benjamini–Hochberg FDR q=0.05.</p></article><article><b>EXECUTION</b><p>Research dashboard/API is read-only. No implicit order path. Execution authorization remains OFF.</p></article></div></div>
+<div class="room-panel" id="room-ledger"><div class="ledger-note">Live Supabase coordination ledger is intentionally not exposed to anonymous dashboard reads. The rows below are the current research ledger facts already persisted in the project and the durable experiment record.</div><div id="roomLedger" class="ledger-grid"><div class="empty">Loading ledger…</div></div></div>
+<div class="room-panel" id="room-process"><div class="process-map"><div class="process-node"><small>01</small><b>BINANCE</b><span>Futures market stream / REST</span></div><i>→</i><div class="process-node"><small>02</small><b>COLLECTOR</b><span>capture + session identity</span></div><i>→</i><div class="process-node"><small>03</small><b>INTEGRITY</b><span>sequence / gap / contamination</span></div><i>→</i><div class="process-node"><small>04</small><b>SUPABASE</b><span>metadata / features / registry</span></div><i>→</i><div class="process-node"><small>05</small><b>RESEARCH</b><span>frozen methods / OOS / costs</span></div><i>→</i><div class="process-node"><small>06</small><b>DASHBOARD</b><span>evidence / observability / audit</span></div></div><div class="process-gates"><div><b>FREEZE GATE</b><span>hypothesis → rule → cutoff</span></div><div><b>VALIDATION GATE</b><span>OOS → cost → CI → regime</span></div><div><b>PROMOTION GATE</b><span>only if every declared gate passes</span></div><div><b>EXECUTION GATE</b><span>separate owner authorization</span></div></div></div>
+<div class="room-panel" id="room-agents"><div class="agent-head"><div><div class="eyebrow">AGENTS.md</div><h3>Multi-agent coordination protocol</h3><p class="muted">The repository has <b>AGENTS.md</b>, not a separate <b>agent.md</b>. This panel renders the actual file.</p></div><a href="https://github.com/Pfn17/btc-usdt-research2/blob/main/AGENTS.md" target="_blank" rel="noreferrer">OPEN SOURCE</a></div><pre class="agent-view"># AGENTS.md — Multi-Agent Coordination Protocol
+
+Project: BTCUSDT Futures Scalping Research (`btc-usdt-research2`)
+Version: 1.1
+Updated: 2026-09-01
+
+This file is the shared operating contract for ChatGPT and Claude instances working on this project. It must be read before changing repository code, database schema/data, environment configuration, or deployments.
+
+## 1. Team Roles
+
+| Agent | Account / Email | Primary role | Current capability status |
+|---|---|---|---|
+| **chatgpt** | ChatGPT operator | **Writer / implementer**; also analysis and engineering | **NON-AVAILABLE** per owner report on 2026-09-07; do not wait for or assume active ChatGPT execution until the owner reactivates it |
+| **claude-1** | `hanz.pirdaus@gmail.com` | **Writer / implementer**; also analysis | Historical commits with this author/committer identity are verified in GitHub history; this proves Git metadata, not which AI session physically executed the action |
+| **claude-2** | `sopiekples@gmail.com` | **Audit / analysis / criticism / reasoning** | GitHub connector reportedly available, but successful write is not currently proven; do not assume write capability |
+| **claude-3** | `parhanfn17@gmail.com` | **Audit / analysis / criticism / reasoning** | Railway, Supabase and Vercel access is available in its session; no GitHub connector was available in the reported session |
+| **manus** | Manus task agent | **Writer / implementer**; GitHub push verified in the current session | **Acting writer for repository/dashboard changes by owner handoff on 2026-09-07**; database access is not assumed and must be evidenced separately |
+| **human** | Project owner | Final authority, product decisions, credentials and approvals | Full owner control |
+
+Role assignment is based on the current project agreement. Actual technical permissions must still be verified from the relevant platform before relying on them.
+
+## 2. Shared Resources
+
+- GitHub repository: `Pfn17/btc-usdt-research2`
+- Supabase project ref: `xaqsntunrqvqpzlbeutt`
+- Railway project: `calm-integrity`
+- Railway service: `btc-usdt-research2`
+- Vercel project: `btc-usdt-research2`
+
+Do not create parallel repositories, databases, deployments, or substitute infrastructure unless explicitly approved by the human owner.
+
+## 3. Non-Negotiable Rules
+
+### 3.0 Free-tier-first owner constraint
+
+The owner has a hard rule: **no paid plan or upgrade is purchased until the project has generated paid revenue first**. This applies to GitHub, Manus, Vercel, Railway, Supabase, Claude, ChatGPT, Grok, and every future provider. Agents must not activate billing, paid add-ons, reserved hosting, or paid API usage without explicit owner approval after presenting the exact cost and rationale. Free-tier capacity is a hard engineering constraint; prefer bounded, batch-oriented, refetchable workflows and version research knowledge/configuration in Git. See `docs/FREE_TIER_GOVERNANCE.md`.
+
+Significant changes must leave a Git commit and a coordination-ledger entry before the next batch begins. Do not use high-frequency AI schedules or duplicate collectors/backfills to simulate monitoring. Never promise that a provider can never hit a limit; measure usage, set a budget, and abort before the cap is threatened.
+
+### 3.1 One active writer per resource
+
+Only one writer may actively modify the same resource/area at a time. Before starting work, inspect the coordination ledger. If another agent owns an `in_progress` task covering the same area, stop and coordinate instead of editing concurrently. **Owner handoff may explicitly supersede an unavailable writer; record the handoff and lock/supersede the stale task before editing.**
+
+### 3.2 Claims are not evidence
+
+Statements such as “done”, “fixed”, “deployed”, or “verified” are claims until supported by evidence another agent can inspect.
+
+Acceptable evidence includes, as applicable:
+- Git commit SHA and changed files
+- GitHub PR/status data
+- Vercel deployment status or deployment ID
+- Railway deployment/log status
+- Supabase query result or migration result
+- test output
+- reproducible research artifact/result
+
+### 3.3 Executor and verifier should be different agents
+
+The agent that implements a change should not be the sole verifier of that change. A writer may report `claimed_done`, but final `verified` status requires an independent check by another agent or the human owner.
+
+For repository changes, a typical flow is:
+
+`implement → commit → deploy/CI → independent audit → verified`
+
+### 3.4 Never invent live data or research results
+
+If a live API, database, order book, feature, signal, backtest result, or deployment state cannot be observed, label it unavailable/unverified. Do not manufacture representative values and present them as live results.
+
+### 3.5 Research integrity
+
+The project is for finding repeatable, cost-adjusted short-horizon edge. Accuracy alone is not sufficient evidence of an exploitable edge. Preserve deterministic replay, data integrity, out-of-sample validation, costs/slippage, robustness testing, and experiment lineage.
+
+### 3.6 Frozen experiments stay frozen
+
+Once an experiment family, generation batch, labeling rule, or evaluation rule is locked, do not silently add hypotheses or alter evaluation criteria. Any new hypothesis or rule change must receive a new batch/lineage identifier.
+
+### 3.7 No trading activation
+
+The research system must remain read-only with respect to trading until a separately approved execution phase exists. Dashboard/API work must not introduce live order placement implicitly.
+
+## 4. Coordination Ledger
+
+Use Supabase table `public.agent_coordination_log` as the shared task ledger.
+
+At the beginning of a session, check active coordination items:
+
+```sql
+select task_id, owner, lane, status, claim, evidence, verified_by, created_at, verified_at
+from public.agent_coordination_log
+where status in ('in_progress','proposed')
+order by created_at desc;
+```
+
+Suggested lifecycle:
+
+`proposed → in_progress → claimed_done → verified`
+
+Other terminal states:
+
+`rejected`, `locked`
+
+Required evidence fields:
+
+- `task_id`
+- `owner`
+- `lane`
+- `status`
+- `claim`
+- `evidence`
+- `verified_by`
+- `verified_at`
+
+A task is not considered verified merely because its owner changed the status.
+
+## 5. Work Lanes
+
+| Lane | Purpose | Default agents |
+|---|---|---|
+| **A** | Implementation and live infrastructure work | ChatGPT, Claude 1 |
+| **B** | Research, statistics, calculations, model reasoning | ChatGPT, Claude 1/2/3 |
+| **C** | Hypothesis generation under immutable experiment batches | Designated agent per batch |
+| **D** | Independent QA, audit, criticism and verification | Claude 2, Claude 3, or another agent not responsible for the implementation |
+
+An agent may participate in analysis outside its default lane, but must not silently change its role from auditor to writer or vice versa.
+
+## 6. Current Repository State — 2026-09-01
+
+The current `main` branch contains the M7 dashboard implementation. Recent commits include:
+
+- `b6682627` — `feat(m7): add read-only BTCUSDT research dashboard`
+- `decb83d8` — `feat(m7): serve read-only dashboard from FastAPI`
+- `474e27d7` — `docs(m7): define dashboard scope and acceptance boundary`
+- `dcce99e5` — `test(m7): verify dashboard asset and read-only contract`
+
+These commits are directly observable in GitHub history. Deployment state must still be checked from Vercel/Railway rather than inferred from the commit message.
+
+M7 is considered **implemented but not automatically verified complete** until deployment and runtime checks pass.
+
+## 7. M7 Scope Boundary
+
+M7 is a read-only research dashboard. It may expose available market, integrity, latency, feature and research information through existing safe APIs.
+
+The dashboard must not fabricate unavailable order-book depth, signals, confidence, expected move, or backtest results. If the underlying data/API is not available, show an explicit unavailable/degraded state.
+
+The roadmap's intended dashboard areas are:
+- Market Overview
+- Order Book Depth
+- Integrity Monitor
+- Latency Monitor
+- Feature Viewer
+- Signal Panel
+- Research / Backtest
+
+Only areas supported by real underlying data should be presented as live/verified.
+
+## 8. PR / Branch Discipline
+
+Do not merge, close, rebase, or otherwise alter an old PR merely because another agent reports its status in chat.
+
+For PR decisions, inspect the GitHub PR directly and record the evidence. Until independently checked, treat prior chat reports about PR #1 (`fix/futures-integrity-foundation`) as unverified coordination information.
+
+Do not make new work depend on an unverified PR state.
+
+## 9. Handoff Protocol
+
+When an agent reaches a limit, loses access, or hands work to another agent:
+
+1. Commit completed safe work if it is the designated writer.
+2. Record the commit SHA and exact state in the coordination ledger.
+3. Mark the task `claimed_done` only when implementation is actually complete.
+4. Leave unresolved questions explicitly marked `unverified`.
+5. The next agent reads the repository and coordination ledger before continuing.
+6. The next agent must not redo completed work without a reason.
+
+## 10. Security
+
+Never commit secrets, API keys, service-role keys, exchange credentials, or `.env` contents. Prefer least-privilege credentials. Do not expose Supabase service-role credentials to client-side/dashboard code.
+
+Security findings should be recorded with evidence and handled as a separate task; do not silently weaken RLS or credential boundaries to make a feature work.
+
+## 11. Definition of Done
+
+A task is only fully done when:
+
+1. implementation exists,
+2. tests/checks appropriate to the change pass,
+3. the change is committed with an identifiable SHA,
+4. deployment/runtime state is checked when relevant,
+5. an independent agent audits the evidence,
+6. the coordination ledger records the verification.
+
+If any of these are missing, use the appropriate intermediate status (`in_progress`, `claimed_done`, or `unverified`) rather than claiming verified completion.
+</pre></div>
+<div class="room-panel" id="room-infra"><div class="infra-grid">
+<article class="infra"><div class="infra-top"><b>SUPABASE</b><span class="ok">READABLE</span></div><strong>xaqsntunrqvqpzlbeutt</strong><p>Production database · 141,772 OHLCV rows · 10,510 basis snapshots · 288 funding events.</p><a href="https://supabase.com/dashboard/project/xaqsntunrqvqpzlbeutt" target="_blank" rel="noreferrer">OPEN DASHBOARD ↗</a></article>
+<article class="infra"><div class="infra-top"><b>VERCEL</b><span class="warn">BUILDING*</span></div><strong>hyperhan.hl</strong><p>Latest production commit: <code>e5110aa</code>. Deployment observed building at last check.</p><a href="https://vercel.com/kalimasada97s-projects/hyperhan.hl" target="_blank" rel="noreferrer">OPEN DASHBOARD ↗</a></article>
+<article class="infra"><div class="infra-top"><b>RAILWAY</b><span class="neg">FAILED*</span></div><strong>btc-usdt-research2</strong><p>Production service latest observed deployment failed. This is shown as observed state, not hidden.</p><a href="https://railway.app/project/cdaf07d8-ba58-4a25-9e02-f8c025ff4960" target="_blank" rel="noreferrer">OPEN DASHBOARD ↗</a></article>
+<article class="infra"><div class="infra-top"><b>BINANCE FUTURES</b><span id="binanceState" class="warn">READING</span></div><strong id="binancePrice">—</strong><p id="binanceMeta">Public BTCUSDT market read. No order capability.</p><a href="https://www.binance.com/en/futures/BTCUSDT" target="_blank" rel="noreferrer">OPEN MARKET ↗</a></article>
+</div><div class="infra-foot">* Provider states are evidence snapshots captured while this dashboard build was made. Market price is refreshed read-only in the browser. Secrets and trading credentials are never rendered.</div></div>
+<div class="room-panel" id="room-sources"><div class="source-book"><details class="book-doc"><summary><span>AGENTS.md</span><small>source: Git / main</small></summary><pre># AGENTS.md — Multi-Agent Coordination Protocol
+
+Project: BTCUSDT Futures Scalping Research (`btc-usdt-research2`)
+Version: 1.1
+Updated: 2026-09-01
+
+This file is the shared operating contract for ChatGPT and Claude instances working on this project. It must be read before changing repository code, database schema/data, environment configuration, or deployments.
+
+## 1. Team Roles
+
+| Agent | Account / Email | Primary role | Current capability status |
+|---|---|---|---|
+| **chatgpt** | ChatGPT operator | **Writer / implementer**; also analysis and engineering | **NON-AVAILABLE** per owner report on 2026-09-07; do not wait for or assume active ChatGPT execution until the owner reactivates it |
+| **claude-1** | `hanz.pirdaus@gmail.com` | **Writer / implementer**; also analysis | Historical commits with this author/committer identity are verified in GitHub history; this proves Git metadata, not which AI session physically executed the action |
+| **claude-2** | `sopiekples@gmail.com` | **Audit / analysis / criticism / reasoning** | GitHub connector reportedly available, but successful write is not currently proven; do not assume write capability |
+| **claude-3** | `parhanfn17@gmail.com` | **Audit / analysis / criticism / reasoning** | Railway, Supabase and Vercel access is available in its session; no GitHub connector was available in the reported session |
+| **manus** | Manus task agent | **Writer / implementer**; GitHub push verified in the current session | **Acting writer for repository/dashboard changes by owner handoff on 2026-09-07**; database access is not assumed and must be evidenced separately |
+| **human** | Project owner | Final authority, product decisions, credentials and approvals | Full owner control |
+
+Role assignment is based on the current project agreement. Actual technical permissions must still be verified from the relevant platform before relying on them.
+
+## 2. Shared Resources
+
+- GitHub repository: `Pfn17/btc-usdt-research2`
+- Supabase project ref: `xaqsntunrqvqpzlbeutt`
+- Railway project: `calm-integrity`
+- Railway service: `btc-usdt-research2`
+- Vercel project: `btc-usdt-research2`
+
+Do not create parallel repositories, databases, deployments, or substitute infrastructure unless explicitly approved by the human owner.
+
+## 3. Non-Negotiable Rules
+
+### 3.0 Free-tier-first owner constraint
+
+The owner has a hard rule: **no paid plan or upgrade is purchased until the project has generated paid revenue first**. This applies to GitHub, Manus, Vercel, Railway, Supabase, Claude, ChatGPT, Grok, and every future provider. Agents must not activate billing, paid add-ons, reserved hosting, or paid API usage without explicit owner approval after presenting the exact cost and rationale. Free-tier capacity is a hard engineering constraint; prefer bounded, batch-oriented, refetchable workflows and version research knowledge/configuration in Git. See `docs/FREE_TIER_GOVERNANCE.md`.
+
+Significant changes must leave a Git commit and a coordination-ledger entry before the next batch begins. Do not use high-frequency AI schedules or duplicate collectors/backfills to simulate monitoring. Never promise that a provider can never hit a limit; measure usage, set a budget, and abort before the cap is threatened.
+
+### 3.1 One active writer per resource
+
+Only one writer may actively modify the same resource/area at a time. Before starting work, inspect the coordination ledger. If another agent owns an `in_progress` task covering the same area, stop and coordinate instead of editing concurrently. **Owner handoff may explicitly supersede an unavailable writer; record the handoff and lock/supersede the stale task before editing.**
+
+### 3.2 Claims are not evidence
+
+Statements such as “done”, “fixed”, “deployed”, or “verified” are claims until supported by evidence another agent can inspect.
+
+Acceptable evidence includes, as applicable:
+- Git commit SHA and changed files
+- GitHub PR/status data
+- Vercel deployment status or deployment ID
+- Railway deployment/log status
+- Supabase query result or migration result
+- test output
+- reproducible research artifact/result
+
+### 3.3 Executor and verifier should be different agents
+
+The agent that implements a change should not be the sole verifier of that change. A writer may report `claimed_done`, but final `verified` status requires an independent check by another agent or the human owner.
+
+For repository changes, a typical flow is:
+
+`implement → commit → deploy/CI → independent audit → verified`
+
+### 3.4 Never invent live data or research results
+
+If a live API, database, order book, feature, signal, backtest result, or deployment state cannot be observed, label it unavailable/unverified. Do not manufacture representative values and present them as live results.
+
+### 3.5 Research integrity
+
+The project is for finding repeatable, cost-adjusted short-horizon edge. Accuracy alone is not sufficient evidence of an exploitable edge. Preserve deterministic replay, data integrity, out-of-sample validation, costs/slippage, robustness testing, and experiment lineage.
+
+### 3.6 Frozen experiments stay frozen
+
+Once an experiment family, generation batch, labeling rule, or evaluation rule is locked, do not silently add hypotheses or alter evaluation criteria. Any new hypothesis or rule change must receive a new batch/lineage identifier.
+
+### 3.7 No trading activation
+
+The research system must remain read-only with respect to trading until a separately approved execution phase exists. Dashboard/API work must not introduce live order placement implicitly.
+
+## 4. Coordination Ledger
+
+Use Supabase table `public.agent_coordination_log` as the shared task ledger.
+
+At the beginning of a session, check active coordination items:
+
+```sql
+select task_id, owner, lane, status, claim, evidence, verified_by, created_at, verified_at
+from public.agent_coordination_log
+where status in ('in_progress','proposed')
+order by created_at desc;
+```
+
+Suggested lifecycle:
+
+`proposed → in_progress → claimed_done → verified`
+
+Other terminal states:
+
+`rejected`, `locked`
+
+Required evidence fields:
+
+- `task_id`
+- `owner`
+- `lane`
+- `status`
+- `claim`
+- `evidence`
+- `verified_by`
+- `verified_at`
+
+A task is not considered verified merely because its owner changed the status.
+
+## 5. Work Lanes
+
+| Lane | Purpose | Default agents |
+|---|---|---|
+| **A** | Implementation and live infrastructure work | ChatGPT, Claude 1 |
+| **B** | Research, statistics, calculations, model reasoning | ChatGPT, Claude 1/2/3 |
+| **C** | Hypothesis generation under immutable experiment batches | Designated agent per batch |
+| **D** | Independent QA, audit, criticism and verification | Claude 2, Claude 3, or another agent not responsible for the implementation |
+
+An agent may participate in analysis outside its default lane, but must not silently change its role from auditor to writer or vice versa.
+
+## 6. Current Repository State — 2026-09-01
+
+The current `main` branch contains the M7 dashboard implementation. Recent commits include:
+
+- `b6682627` — `feat(m7): add read-only BTCUSDT research dashboard`
+- `decb83d8` — `feat(m7): serve read-only dashboard from FastAPI`
+- `474e27d7` — `docs(m7): define dashboard scope and acceptance boundary`
+- `dcce99e5` — `test(m7): verify dashboard asset and read-only contract`
+
+These commits are directly observable in GitHub history. Deployment state must still be checked from Vercel/Railway rather than inferred from the commit message.
+
+M7 is considered **implemented but not automatically verified complete** until deployment and runtime checks pass.
+
+## 7. M7 Scope Boundary
+
+M7 is a read-only research dashboard. It may expose available market, integrity, latency, feature and research information through existing safe APIs.
+
+The dashboard must not fabricate unavailable order-book depth, signals, confidence, expected move, or backtest results. If the underlying data/API is not available, show an explicit unavailable/degraded state.
+
+The roadmap's intended dashboard areas are:
+- Market Overview
+- Order Book Depth
+- Integrity Monitor
+- Latency Monitor
+- Feature Viewer
+- Signal Panel
+- Research / Backtest
+
+Only areas supported by real underlying data should be presented as live/verified.
+
+## 8. PR / Branch Discipline
+
+Do not merge, close, rebase, or otherwise alter an old PR merely because another agent reports its status in chat.
+
+For PR decisions, inspect the GitHub PR directly and record the evidence. Until independently checked, treat prior chat reports about PR #1 (`fix/futures-integrity-foundation`) as unverified coordination information.
+
+Do not make new work depend on an unverified PR state.
+
+## 9. Handoff Protocol
+
+When an agent reaches a limit, loses access, or hands work to another agent:
+
+1. Commit completed safe work if it is the designated writer.
+2. Record the commit SHA and exact state in the coordination ledger.
+3. Mark the task `claimed_done` only when implementation is actually complete.
+4. Leave unresolved questions explicitly marked `unverified`.
+5. The next agent reads the repository and coordination ledger before continuing.
+6. The next agent must not redo completed work without a reason.
+
+## 10. Security
+
+Never commit secrets, API keys, service-role keys, exchange credentials, or `.env` contents. Prefer least-privilege credentials. Do not expose Supabase service-role credentials to client-side/dashboard code.
+
+Security findings should be recorded with evidence and handled as a separate task; do not silently weaken RLS or credential boundaries to make a feature work.
+
+## 11. Definition of Done
+
+A task is only fully done when:
+
+1. implementation exists,
+2. tests/checks appropriate to the change pass,
+3. the change is committed with an identifiable SHA,
+4. deployment/runtime state is checked when relevant,
+5. an independent agent audits the evidence,
+6. the coordination ledger records the verification.
+
+If any of these are missing, use the appropriate intermediate status (`in_progress`, `claimed_done`, or `unverified`) rather than claiming verified completion.
+</pre></details><details class="book-doc"><summary><span>docs/EXPERIMENT_LEDGER.md</span><small>source: Git / main</small></summary><pre># BTCUSDT Edge Research — Experiment Ledger
+
+Updated: 2026-09-08
+
+## Objective
+
+Primary objective is **not** to build a bot until it is profitable.
+
+&gt; Find one conditional trading setup with positive **net EV out-of-sample (OOS)** that is reproducible.
+
+If a hypothesis fails, kill it. Do not add indicators or infrastructure to rescue it.
+
+## Operating Contract
+
+### Stage 1 — Explore
+- Use only existing tables/data.
+- Cheap SQL/RPC analysis.
+- No new Railway services, dashboard work, or production infrastructure.
+- A hypothesis must be written and frozen before querying results.
+
+### Stage 2 — Validate
+- Use data not used for discovery.
+- Include fees, slippage, and latency assumptions.
+- A candidate must survive OOS.
+- Net EV &lt;= 0 OR CI95% crossing zero =&gt; kill.
+- Do not retune after seeing validation results.
+
+### Stage 3 — Paper
+- Only after Stage 2 passes.
+- Then serious real-time collector/dashboard/persistent signal logging is justified.
+- Live order execution remains OFF until independently validated.
+
+## H-FB1 — KILL
+
+Family: Funding / follow-sign.
+
+Result already established:
+- Gross EV: approximately +5 bps
+- Net EV after 10 bps RT cost: approximately -5 bps
+- Win rate: 44.44%
+- Net CI95%: approximately [-12.74, +2.75] bps
+
+Decision: **KILL**.
+
+Do not retune H-FB1 on the same data.
+
+## H-FB2 — KILL
+
+Hypothesis: extreme funding crowding is faded until the next actual funding print.
+
+Frozen rules:
+- Train = first 60 days of funding events, ordered by timestamp.
+- OOS = remaining ~30 days.
+- Q10/Q90 calculated once from train only.
+- Frozen Q10 = -0.000082.
+- Frozen Q90 = +0.000095.
+- Funding &lt;= Q10 -&gt; LONG.
+- Funding &gt;= Q90 -&gt; SHORT.
+- Exit = next actual funding print.
+- Entry = markPrice at funding event (for the completed external test).
+- Cost = 4 bps + 1 bps per side = 10 bps round trip.
+- Funding cashflow at next print included.
+- No changing Q, direction, hold, regime, RSI, EMA, or other filters.
+
+Reported results:
+- Train: N=36, gross +2.0 bps, net -8.0 bps, win 44%.
+- OOS: N=29, gross -16.1 bps, net -26.1 bps, win 45%.
+- OOS net CI95%: approximately [-72, +19] bps.
+
+Decision: **KILL**.
+
+The OOS being all short is an observed regime characteristic, not a reason to change the rule.
+
+## Funding Family Status
+
+H-FB1 = KILL.
+H-FB2 = KILL.
+
+**2/2 failed -&gt; funding family CLOSED temporarily.**
+
+Do not run Q80/Q20, alternative holding periods, sign-follow variants, regime filters, or combined indicators as follow-ups to this family.
+
+## Next Allowed Work — H-MR1
+
+The next OHLCV hypothesis is **H-MR1 — Intraday Extreme-Candle Mean Reversion**. It is a new reversal mechanism, not a continuation or funding-family follow-up.
+
+The specification is frozen in `docs/H-MR1_PREREGISTRATION.md` and implemented as a separate read-only RPC:
+
+`research_hmr1_scan_frozen(bigint,bigint,numeric,numeric,numeric)`
+
+Frozen controls include the train-only 95th percentile of absolute 15-minute returns, opposite-direction entry, one-hour exit, chronological non-overlap, explicit OOS cutoff, 10 bps baseline cost, 12 bps stress cost, weekly/direction breakdowns, and predeclared promotion/kill gates. The manual API route is `/api/v1/research/hmr1` and is not wired into the dashboard.
+
+Current status: **FROZEN / IMPLEMENTED / UNRUN**. No H-MR1 outcome has been queried by this implementation. An independent verifier must inspect the migration and API before the first scan. Any result must be recorded as a new hypothesis row for project-wide multiple-testing accounting.
+
+## Infrastructure Debt
+
+Existing Stage-3 infrastructure was built before Stage-2 proof. Treat it as debt, not evidence of edge.
+
+Existing signal/audit logs should be preserved and never reset merely to make a new experiment cleaner.
+
+## Production archive synchronization — 2026-09-09
+
+The production Supabase registry contains `fam-swing-v1` and a frozen `H-SW1` row. Two separate research RPC lineages are now live and versioned:
+
+- `research_sw1_scan_frozen(text,numeric,numeric,integer)` — **H-SW1-CLAUDE**, the original reference method.
+- `research_sw1_manus_scan_frozen(bigint,numeric,numeric,integer)` — **H-SW1-MANUS**, an independent method with a different candidate grid, funding agreement rule, and period grouping.
+
+The Manus function was applied by migration `20260908025302` and is represented in Git by commit `1153323`. The two methods must not be merged, silently substituted, or reported as mutual confirmation. The live read-only verification recorded in `docs/HSW1_LIVE_VERIFICATION_2026-09-09.md` found both methods **INCONCLUSIVE / NOT PROMOTED** because their overall CI95 intervals cross zero. Neither method is a trading signal.
+
+The portfolio dashboard is a **Research Archive** with three local presentation modes: Terminal, Apple, and Story / Visual. The modes change presentation only; they use the same backend-derived data and do not enable execution. The dashboard commit is `689dcd4`. The archive must not present `LONG`, collector health, or any other observed state as profitability, a validated edge, or trading approval. H-FB1 remains **KILL**, the funding family remains **CLOSED**, H-SW1 remains **INCONCLUSIVE**, and execution remains **OFF**.
+
+The implementation and live verification are now synchronized across Git, Supabase, and this ledger. Any future method with materially different logic must receive a new hypothesis identity and independent frozen specification rather than reusing H-SW1.
+
+## Hard Stop
+
+If the current candidate fails its frozen OOS gate, kill it. Do not optimize around the result.
+
+
+## H-FB3 five-gap closure — 2026-09-10
+
+The independent audit of H-FB3 identified two presentation defects and three provenance/governance gaps. The persisted outcome itself is unchanged: `N=2,984`, net EV `-10.118565 bps`, CI95 `[-10.793438, -9.443693] bps`, stress net EV `-12.118565 bps`, status `KILLED`, and trading disabled.
+
+The dashboard now reads the stress value from `evidence.stress_net_bps` and includes H-FB3 as a fourth row in the EV/CI comparison chart. The discarded earlier `N=4,692` run is now retained as an append-only audit trace with its wrong OOS timestamp-window reason; it is not evidence and does not replace the official result. The exact frozen OOS window is reconciled to commit `fd712a286f4ef79476da11dcf985a8650c7008eb`: `2026-08-03T00:00:00Z` through `2026-09-09T23:59:59.999Z`, with query cutoff `2026-09-10T10:18:00Z`.
+
+For future confirmatory families, the project default is now prospective Benjamini–Hochberg FDR at `q=0.05` across a predeclared hypothesis universe, declared before outcomes are opened. Exploratory scans cannot be promoted as confirmatory findings. Each hypothesis must still pass its own frozen economic, confidence, temporal, and cost gates. No retroactive FDR adjustment is applied to H-FB3; it remains an unadjusted pre-registered KILL. No H-FB4 or later confirmatory outcome may be opened without a family registry and FDR declaration. Full evidence is recorded in `docs/H-FB3_AUDIT_ADDENDUM_2026-09-10.md` and `public.agent_coordination_log`.
+
+
+## H-VOL1 readiness implementation — 2026-09-12
+
+H-VOL1 is registered as family `fam-vol-v1`, protocol `v1-fdr-q005`, with status `FROZEN_IMPLEMENTED_UNRUN`. The frozen mechanism is a strict 120-minute breakout confirmed by train-only taker-buy-ratio P90/P10, exact `t+1` entry, exact 120-minute exit, greedy chronological non-overlap, 10 bps baseline cost, and 12 bps stress cost. The exact OOS boundary is **not yet frozen**.
+
+The owner-facing dashboard now exposes backend-derived H-VOL1 readiness only. It does not poll the outcome route, choose a cutoff, display profitability, or enable execution. Supabase readiness at `as_of_ms=1789064160000` reports `141,772` candles, `84` missing minutes versus `141,856` expected, `141,065` complete range windows, `141,772` valid taker ratios, no training/OOS split because no boundary was supplied, `outcome_run=false`, and `authorization=NOT GRANTED`. This is data-readiness evidence, not an outcome.
+
+The live Supabase registry already contained H-VOL1 objects under migrations `20260912075810`, `20260912075927`, and `20260912080008`, while those historical migration files were absent from GitHub `main`. A source-reconciliation migration and handoff were added rather than creating a parallel hypothesis or silently replacing the live lineage. No H-VOL1 profitability/OOS scan was run. Independent audit remains required before any cutoff is frozen or outcome is queried. Full details: `docs/H-VOL1_PREREGISTRATION.md` and `docs/AGENT_HANDOFF_2026-09-12_HVOL1.md`.
+</pre></details><details class="book-doc"><summary><span>docs/HMR1_GATE_SPEC.md</span><small>source: Git / main</small></summary><pre># H-MR1 Gate Specification
+
+**Status:** FROZEN IMPLEMENTED · METHOD NOT READY · OUTCOME UNRUN · AUTHORIZATION NOT GRANTED · TRADING DISABLED
+
+H-MR1 tests whether an extreme closed 15-minute BTCUSDT move, defined by the train-only 95th percentile of absolute return, predicts partial reversal over the next one hour. The specification is registered in Supabase under `H-MR1`. This document records the gate implementation; it does not record an outcome.
+
+## Exact trigger predecessor
+
+A trigger at candle time `t` is eligible only when the BTCUSDT 1-minute candle at exactly `t - 15 minutes` exists. The implementation uses an exact timestamp join. It does not use row offset, nearest-candle lookup, fill, interpolation, or bridging across a gap.
+
+## Entry and exit availability
+
+The entry is the first available 1-minute open at or after `trigger + 1 minute`, within the frozen one-hour alignment tolerance. The exit is the first available 1-minute close at or after `entry + 60 minutes`, within the frozen one-hour alignment tolerance. A candidate without both fills is excluded from the candidate set and is visible through the separate readiness facts.
+
+## Greedy chronological non-overlap
+
+Filled candidates are ordered chronologically by entry timestamp and trigger timestamp. The first valid candidate is accepted. The next accepted candidate is the first candidate whose entry timestamp is at or after the previously accepted trade's scheduled exit. Candidates that overlap are rejected while the chronological search continues. This is implemented by a recursive CTE; a window `lag(exit)` filter is not used.
+
+## Readiness-only RPC
+
+`research_hmr1_readiness(p_as_of_ms, p_oos_start_ms)` reports backend-derived facts only:
+
+- coverage start and end;
+- observed candle count and expected minute count;
+- missing-minute count and continuity state;
+- exact predecessor count and rate;
+- entry and exit availability counts;
+- training and OOS candle coverage;
+- complete OOS ISO-week count;
+- whether the OOS boundary is frozen;
+- whether an outcome was run.
+
+The RPC always reports `outcome_run = false`. The API route `/api/v1/research/hmr1/readiness` never calls the outcome RPC.
+
+## OOS boundary
+
+The exact UTC cutoff and `p_oos_start_ms` are intentionally **not frozen yet**. No agent may choose, infer, or display a substitute cutoff. Until the owner explicitly approves the exact boundary, readiness must remain `NOT_READY`, no H-MR1 scan may be called, and no performance number may be displayed as an H-MR1 result.
+
+## Dashboard contract
+
+The Terminal page displays the readiness state, coverage/continuity, exact predecessor evidence, entry/exit availability, training/OOS counts, complete ISO weeks, OOS boundary state, and outcome state. `UNAVAILABLE` is shown when the backend cannot provide a fact. No placeholder, mock, or fabricated value is allowed.
+</pre></details><details class="book-doc"><summary><span>docs/H-VOL1_PREREGISTRATION.md</span><small>source: Git / main</small></summary><pre># H-VOL1 Preregistration — Breakout Confirmed by Extreme Taker-Flow Participation
+
+## Status
+
+**METHODOLOGY FROZEN / IMPLEMENTED / READINESS VISIBLE / OUTCOME UNRUN.** This document is a specification and readiness contract, not evidence of profitability. No H-VOL1 outcome or OOS profitability scan is authorized by this implementation. Trading and paper promotion remain disabled.
+
+## Research question
+
+Does a 120-minute BTCUSDT price breakout have better continuation when the breakout candle is accompanied by extreme directional taker-buy participation? The predictive input is the OHLCV-derived `taker_buy_volume / volume` ratio. This is a new hypothesis identity and is not a generic volume claim.
+
+## Frozen signal definition
+
+Use closed `public.ohlcv_1m` candles. For breakout candle `t`, define the prior range from the preceding **120 actual elapsed minutes**, excluding `t`:
+
+- `prior_high[t] = max(high)` over timestamps `t - 120 minutes` through `t - 1 minute`;
+- `prior_low[t] = min(low)` over the same interval.
+
+A range window is valid only when all 120 expected one-minute timestamps exist. Missing candles must invalidate the window; the implementation must not use nearest-candle substitution, forward fill, interpolation, row-count substitution, or silent gap bridging.
+
+An upside breakout requires `close[t] &gt; prior_high[t]`. A downside breakout requires `close[t] &lt; prior_low[t]`. Equality is not a breakout.
+
+For candles with `volume &gt; 0`, define `taker_buy_ratio = taker_buy_volume / volume`. Candles with `volume &lt;= 0` are invalid and excluded from the percentile population. Training-only thresholds are:
+
+- upside confirmation: `P90(taker_buy_ratio)`;
+- downside confirmation: `P10(taker_buy_ratio)`.
+
+The thresholds are calculated only from the chronological training segment and must be frozen before any OOS outcome is observed. Confirmed upside breakouts produce `LONG`; confirmed downside breakouts produce `SHORT`. An unconfirmed breakout produces no entry.
+
+## Entry, exit, and non-overlap
+
+Entry is the open of candle `t + 1 minute`. Exit is the close of the candle exactly **120 elapsed minutes after entry**. If either exact timestamp is absent, the candidate is rejected; the implementation must not silently substitute the next available candle.
+
+Candidates are ordered chronologically. Greedy non-overlap is based on the previous **accepted trade's scheduled exit**, not the previous raw candidate's exit. The selection is deterministic.
+
+## Cost and statistics contract
+
+Baseline cost is the project convention of 4 bps fee per side plus 1 bps slippage per side: **10 bps round trip**. Stress cost is **12 bps round trip**. The eventual outcome function returns overall, ISO-week, and direction breakdowns; arithmetic-mean normal-approximation CI95; baseline and stress economics; weekly positive-count and concentration checks; and the promotion/kill/inconclusive gate fields used by H-FB3/H-MR1.
+
+The H-VOL1 result must be entered into the project-wide hypothesis/FDR ledger if and only if an authorized outcome scan is later run. FDR cannot rescue a failed economic or confidence gate.
+
+## OOS boundary and authorization
+
+The exact OOS boundary is intentionally **NOT YET FROZEN** in this implementation. The readiness API accepts an explicit boundary only to calculate factual training/OOS readiness; the dashboard does not invent or submit one. Until a boundary is independently reviewed, explicitly recorded, and authorized:
+
+- outcome status is **UNRUN**;
+- OOS outcome observed is **NO**;
+- authorization is **NOT GRANTED**;
+- the dashboard must not preview profitability;
+- no H-VOL1 scan may be called by the dashboard.
+
+## Readiness surface
+
+`GET /api/v1/research/hvol1/readiness` is the only dashboard-facing H-VOL1 endpoint. It reports backend-derived facts including coverage, one-minute gaps, complete 120-minute range-window availability, valid ratio observations, train/OOS counts, train P90/P10 when an explicitly supplied boundary exists, exact entry/exit availability, non-overlap methodology, baseline/stress costs, boundary state, outcome state, and authorization state. Uncomputed or unfrozen values remain `NOT FROZEN`, `NOT YET COMPUTED`, or `UNAVAILABLE`.
+
+`GET /api/v1/research/hvol1` remains manual and research-only for a future authorized run. It is not polled by the dashboard and does not enable execution.
+
+## Audit boundary
+
+This implementation must leave an append-only trail stating:
+
+- H-VOL1 outcome scan: **NOT RUN**;
+- OOS outcome observed: **NO**;
+- authorization: **NOT GRANTED**;
+- status: **AWAITING INDEPENDENT AUDIT**.
+
+An independent verifier must review the source migration, live RPC identity, readiness payload, API route, dashboard rendering, and test suite before any cutoff is frozen or any outcome is executed.
+</pre></details><details class="book-doc"><summary><span>docs/DATA_CONTRACT.md</span><small>source: Git / main</small></summary><pre># Data Contract v1
+
+## Raw depth event
+Every captured event must preserve:
+- symbol
+- exchange event timestamp
+- local receive timestamp
+- stream/event type
+- first update ID (`U`)
+- final update ID (`u`)
+- previous-final/update linkage when supplied by the exchange
+- bids and asks exactly as received
+- collector instance/session identifier
+- archive sequence/order
+
+Raw records are append-only and immutable.
+
+## Book state
+A reconstructed state is valid only when snapshot initialization and every incremental update satisfy the exchange sequence rules. A detected gap triggers rebuild; the affected interval is contaminated.
+
+## Contamination
+Half-open interval convention: `[t_start, t_end)`.
+
+Invalidity classes:
+- `DATA_INVALID`
+- `FEATURE_INVALID`
+- `LABEL_INVALID`
+
+Reasons include:
+- `DATA_GAP`
+- `BOOK_REBUILD`
+- `FEATURE_WINDOW_CONTAMINATION`
+- `LABEL_WINDOW_CONTAMINATION`
+
+Any feature or label window intersecting a contaminated interval is invalidated.
+
+## Research entities
+Candidate events must retain immutable IDs and timestamps. Labels record barrier parameters, outcome, MFE, MAE, time-to-target and time-to-stop. Hypotheses record hypothesis ID, parent hypothesis ID, stage, experiment family, generation method and creation timestamp.
+
+## Public performance disclosure
+
+The dashboard is a portfolio archive. Failed research families may expose their failure rationale and aggregate evidence. A future validated family must expose only persisted aggregate performance fields: gross profit, gross loss, net profit, closed observations, wins, losses, win rate, average outcome, profit factor, maximum drawdown, status, and execution status.
+
+The public view must exclude hypothesis identity, feature definitions, parameters, thresholds, entry and exit rules, direction, timing, rationale, source code, query text, and per-trade evidence. A missing aggregate row must return an unavailable state; it must never be replaced by a placeholder, mock, dummy, or fabricated value. The redaction boundary is enforced in backend code rather than by frontend convention.
+</pre></details><details class="book-doc"><summary><span>docs/ARCHITECTURE.md</span><small>source: Git / main</small></summary><pre># BTCUSDT Research 2 — Architecture Contract
+
+## Purpose
+Research-first system for BTCUSDT perpetual futures on Binance Futures. The system discovers and validates short-horizon, cost-adjusted edges before any live-trading consideration.
+
+## Non-negotiable boundaries
+- Binance BTCUSDT perpetual is the execution-data authority.
+- Historical full L2 is not assumed; L2 begins at project collection start.
+- Raw L2 is immutable and archived outside Supabase.
+- Supabase stores structured metadata, indexes, health, labels, features, experiments and results.
+- Provider infrastructure is portable through adapters and environment configuration.
+- Live trading is disabled until explicit research/execution gates pass.
+- No API keys or secrets are committed to Git.
+
+## Logical components
+1. `collector`: Binance depth stream + snapshot acquisition.
+2. `orderbook`: local book reconstruction and sequence-gap recovery.
+3. `integrity`: gap/rebuild detection and contamination intervals.
+4. `archive`: immutable raw event archive interface.
+5. `metadata`: Supabase persistence for structured state.
+6. `research`: events, TBM, MFE/MAE, uniqueness, walk-forward evaluation.
+7. `execution`: spread, walk-the-book impact, fees, latency and implementation shortfall.
+8. `experiments`: hypothesis lineage, frozen batches and research freeze.
+9. `dashboard`: observability/research UI; never implicitly enables trading.
+
+## Data flow
+Binance Futures depth stream + REST snapshot -&gt; local order book -&gt; integrity validation -&gt; immutable raw archive -&gt; derived features -&gt; research/evaluation -&gt; experiment registry/results.
+
+## Deployment abstraction
+The collector must run locally and on Railway or Render without core-code changes. Dashboard/API may run on Vercel. Replit/Codespaces are development environments, not production dependencies.
+</pre></details><details class="book-doc"><summary><span>docs/HSW1_LIVE_VERIFICATION_2026-09-09.md</span><small>source: Git / main</small></summary><pre># H-SW1 Live Verification — 2026-09-09
+
+**Verifier:** Manus 1 via Supabase MCP connector  
+**Project:** `btc-usdt-research2` / ref `xaqsntunrqvqpzlbeutt`  
+**Verification type:** read-only live database verification  
+**Cutoff:** latest `ohlcv_1m.open_time_ms = 1788940200000` at query time  
+**Database status:** `ACTIVE_HEALTHY`
+
+## Function identity
+
+The live database contains exactly two distinct H-SW1-related functions:
+
+| Method | Signature | RPC |
+|---|---|---|
+| H-SW1-CLAUDE | `research_sw1_scan_frozen(text,numeric,numeric,integer)` | `research_sw1_scan_frozen` |
+| H-SW1-MANUS | `research_sw1_manus_scan_frozen(bigint,numeric,numeric,integer)` | `research_sw1_manus_scan_frozen` |
+
+The original Claude function uses `p_as_of_ms text` and internally parses the epoch value. The Manus function uses `p_as_of_ms bigint`. They are not overloaded under the same name and are not treated as interchangeable.
+
+## Live call parameters
+
+Both methods were called with the frozen cost and lookback parameters:
+
+| Parameter | Value |
+|---|---:|
+| Fee per side | 4 bps |
+| Slippage per side | 1 bps |
+| Funding lookback | 3 events |
+| Horizon | 24 hours |
+| As-of cutoff | `1788940200000` |
+
+The Claude RPC was called with `NULL::text`, which invokes its internal latest-OHLCV cutoff. The Manus RPC was called explicitly with `(SELECT max(open_time_ms) FROM ohlcv_1m WHERE symbol='BTCUSDT')` because the Manus function has no default cutoff. Both resolved to the same latest cutoff.
+
+## Live results
+
+### H-SW1-CLAUDE
+
+| Bucket | N | Gross EV (bps) | Net EV (bps) | Win rate | Net CI95 (bps) |
+|---|---:|---:|---:|---:|---:|
+| Overall | 38 | 10.4815 | 0.4815 | 52.63% | -48.8390 to 49.8020 |
+| Quarter 1 | 10 | -29.5955 | -39.5955 | 40.00% | -145.1383 to 65.9472 |
+| Quarter 2 | 10 | 69.1982 | 59.1982 | 60.00% | -22.1389 to 140.5352 |
+| Quarter 3 | 9 | 11.2683 | 1.2683 | 66.67% | -100.8539 to 103.3906 |
+| Quarter 4 | 9 | -11.0159 | -21.0159 | 44.44% | -130.3783 to 88.3466 |
+
+### H-SW1-MANUS
+
+| Bucket | N | Gross EV (bps) | Net EV (bps) | Win rate | Net CI95 (bps) |
+|---|---:|---:|---:|---:|---:|
+| Overall | 44 | 32.3353 | 22.3353 | 43.18% | -43.2269 to 87.8975 |
+| Calendar Q2 2026 | 6 | -48.2010 | -58.2010 | 33.33% | -202.7810 to 86.3789 |
+| Calendar Q3 2026 | 38 | 45.0516 | 44.44% | 44.74% | -37.1638 to 107.2669 |
+
+## Decision
+
+Both live methods are **INCONCLUSIVE / NOT PROMOTED**. Neither is a validated edge because each overall confidence interval crosses zero. The Manus point estimate is not comparable to the Claude point estimate as a confirmation because the candidate grid, funding agreement rule, and period bucketing differ.
+
+The dashboard must preserve both method identities and display unavailable states when a live RPC cannot be reached. Neither method enables paper trading or live execution.
+
+## Important evidence boundary
+
+The live function inspection and RPC outputs verify availability, signatures, cutoff, and current returned rows. This does not independently prove the historical `research_results` record or the external report's original cutoff. The official H-SW1 registry row exists with `horizon_seconds=86400`, but the `research_results` table schema has no direct `hypothesis_id` column; any lineage join requires the appropriate model/split registry mapping before claiming an exact match.
+
+No DDL or data mutation was performed during this verification.
+</pre></details><details class="book-doc"><summary><span>docs/OWNER_GOVERNANCE.md</span><small>source: Git / main</small></summary><pre># Owner governance memory
+
+The project separates authority from implementation. **Owner decisions** are durable records of what the owner decided, why it was decided, and the scope to which it applies. **Agent recommendations** are suggestions that become authoritative only after an owner disposition of `APPROVED`. The authority order is: owner decision → governance rule → approved recommendation → task → implementation → verification.
+
+The primary research dashboard does **not** render or poll the governance memory. The governance summary endpoint remains available as a bounded read-only surface for governance tooling, while the research dashboard stays limited to research results, evidence, and system observability. The governance layer does not expose credentials, internal prompts, or the complete coordination history. Writes to these tables are trusted database operations; the public API is read-only.
+
+Material changes must preserve the trace `OWNER DECISION → TASK → COMMIT → RESULT → VERIFICATION`. Frozen research parameters remain governed by the experiment ledger and may not be changed by an agent after seeing results.
+</pre></details><details class="book-doc"><summary><span>docs/AGENT_HANDOFF_2026-09-12_HVOL1.md</span><small>source: Git / main</small></summary><pre># Agent Handoff — H-VOL1 Readiness Implementation — 2026-09-12
+
+**Writer:** Manus
+**Status:** implemented / readiness visible / awaiting independent audit
+**Scope:** H-VOL1 preregistration, source reconciliation migration, manual API route, owner-facing readiness card, contract tests, and audit trail.
+**Outcome scan:** intentionally not run.
+**Execution:** disabled; no order or paper-promotion path added.
+
+## Existing live registry reconciled
+
+Supabase already contained the H-VOL1 registry and live objects before this GitHub batch:
+
+| Object | Live fact |
+|---|---|
+| Family | `fam-vol-v1` |
+| Protocol | `v1-fdr-q005` |
+| Hypothesis | `H-VOL1` |
+| Frozen registry status | `FROZEN_IMPLEMENTED_UNRUN` |
+| Live readiness RPC | `public.research_hvol1_readiness(bigint,bigint)` |
+| Live manual scan RPC | `public.research_hvol1_scan_frozen(bigint,bigint,numeric,numeric,numeric)` |
+| Live migration registry | `20260912075810`, `20260912075927`, `20260912080008` |
+
+Those three live migration names were not present in the GitHub `main` checkout. The new `20260912100000_hvol1_source_reconciliation.sql` file therefore records the object definitions under a new source-reconciliation migration instead of pretending to be one of the historical migrations. It is not a second hypothesis or a second scan path.
+
+## Readiness evidence
+
+A read-only call to `research_hvol1_readiness(1789064160000, NULL)` returned:
+
+| Field | Value |
+|---|---:|
+| `status` | `NOT_READY` |
+| coverage | `141,772` candles from `1780552860000` to `1789064160000` |
+| expected minute count | `141,856` |
+| missing minutes | `84` |
+| continuity | `false` |
+| complete 120-minute range windows | `141,065` |
+| valid taker ratios | `141,772` |
+| training/OOS candles | `0 / 0` because no cutoff was supplied |
+| train P90/P10 | not computed because no cutoff was supplied |
+| outcome | `false` / UNRUN |
+| authorization | `NOT GRANTED` |
+
+This is data readiness, not profitability evidence. No result row exists for H-VOL1.
+
+## Owner-facing implementation
+
+The dashboard now polls only `/api/v1/research/hvol1/readiness`. It displays continuity, range-window coverage, valid taker-ratio count, train/OOS state, P90/P10 state, exact boundary state, entry/exit availability, non-overlap method, cost assumptions, outcome state, and authorization state. It does not poll `/api/v1/research/hvol1`, choose an OOS cutoff, or preview profitability.
+
+The manual route `/api/v1/research/hvol1` is present for a future authorized run but remains outside dashboard polling and returns `authorization: NOT GRANTED` with `trading_enabled: false`.
+
+## Verification boundary
+
+Writer-side validation passed: `65 passed, 2 skipped`; dashboard JavaScript passed `node --check`. The two skipped tests are the existing Supabase integration tests without service-role credentials. Independent verification must still review the source reconciliation migration against the live RPC definitions, especially strict range-window timestamp checks, exact entry/exit alignment, greedy previous-accepted-exit non-overlap, train-only P90/P10 scope, and the fact that no outcome was queried.
+
+## Explicit next action
+
+Do not freeze an OOS cutoff or execute H-VOL1 until an independent verifier signs off on the migration/API/dashboard contract and the owner records the exact cutoff decision. If the 84 missing minutes affect the eligible window, the verifier must decide how the predeclared invalid-window rule applies; no silent gap repair is allowed.
+</pre></details><details class="book-doc"><summary><span>docs/AGENT_HANDOFF_2026-09-11_HMR1.md</span><small>source: Git / main</small></summary><pre># Agent Handoff — H-MR1 Implementation — 2026-09-11
+
+**Writer:** Manus  
+**Status:** claimed_done / awaiting independent verification  
+**Scope:** preregistration, read-only Supabase RPC, manual API route, tests, ledger entry  
+**Frontend:** intentionally unchanged  
+**Outcome scan:** intentionally not run
+
+## Implementation
+
+H-MR1 is frozen as a new reversal hypothesis: a train-only 95th percentile of absolute 15-minute close-to-close return triggers an opposite-direction trade with a one-hour horizon. The implementation uses the explicit OOS cutoff supplied by the caller, chronological non-overlap, a 10 bps baseline cost, a 12 bps stress cost, and overall/weekly/direction output rows.
+
+Git files:
+
+- `docs/H-MR1_PREREGISTRATION.md`
+- `supabase/migrations/20260911090000_hmr1_extreme_mean_reversion.sql`
+- `src/btc_research/api.py`
+- `tests/test_hmr1_contract.py`
+- `docs/EXPERIMENT_LEDGER.md`
+
+Supabase object applied:
+
+`public.research_hmr1_scan_frozen(bigint,bigint,numeric,numeric,numeric)`
+
+API route:
+
+`GET /api/v1/research/hmr1`
+
+The route is manual and research-only. It is not called by the dashboard and cannot place orders.
+
+## Verification boundary
+
+Local validation passed: `56 passed, 2 skipped`. This is writer-side evidence only. An independent verifier must inspect the SQL semantics, especially percentile training scope, fill alignment, non-overlap selection, weekly counts, and cost stress before any H-MR1 scan is executed.
+
+No outcome, signal, PASS, KILL, or profitability claim exists yet. The expected pre-scan state is **FROZEN / IMPLEMENTED / UNRUN**.
+</pre></details></div></div>
+</section></main>
 <footer><strong>HYPERHAN LAB</strong> · BTCUSDT Research · by @parhanfirdausnugraha<br><span style="opacity:.6">Production Supabase · refresh 60s · trading disabled · evidence over assumption</span></footer>
 <script>
 const SB='https://xaqsntunrqvqpzlbeutt.supabase.co';const KEY='sb_publishable_jcCZg32IQNJLjHZlytcu7w_hscMGOzj';const H='apikey';const OS=1785110400000,OE=1788739140000;
@@ -61,4 +960,10 @@ async function refresh(){const sync=document.getElementById('sync');try{const hs
  const results=await Promise.all(hs.map(run));document.getElementById('hypotheses').innerHTML=hs.map((h,i)=>{const r=results[i],x=overall(r.rows),dec=decision(x),cls=r.state.includes('ERROR')||r.state.includes('BLOCKED')||dec==='KILL'?'red':dec.includes('PROMOTION')?'green':'gold';return `<article class="card hyp"><div class="hyp-head"><div><div class="eyebrow">${String(i+1).padStart(2,'0')} · ${esc(h.hypothesis_key)}</div><h3>${esc(h.statement)}</h3></div><div class="status ${cls}">${esc(r.state)}</div></div>${how(h)}${metrics(x)}<div class="facts"><div class="fact"><div class="label">Decision</div><b class="${cls}">${esc(dec)}</b></div><div class="fact"><div class="label">Boundary</div><b>${esc(r.boundary)}</b></div><div class="fact"><div class="label">Frozen at</div><b>${esc(h.frozen_at||'NOT FROZEN')}</b></div><div class="fact"><div class="label">Runtime state</div><b>${esc(r.state)}</b></div></div><div class="reason">${r.error?`<span class="err">Backend error:</span> ${esc(r.error)}`:`<b>Reason:</b> ${dec==='KILL'?'Measured cost-adjusted outcome fails the positive-edge gate.':dec==='INCONCLUSIVE'?'Measured estimate does not clear the confidence gate.':r.state.includes('BLOCKED')?'Required production data is absent, so the hypothesis is blocked rather than mocked.':'Backend state and result are shown exactly as returned; promotion is still controlled by governance.'}`}</div></article>`}).join('');sync.textContent='LIVE · '+new Date().toISOString().slice(11,19)+'Z';sync.className='status green'}catch(e){sync.textContent='BACKEND ERROR';sync.className='status red';document.getElementById('system').textContent='ERROR';document.getElementById('system').className='big red';document.getElementById('hypotheses').innerHTML=`<div class="card"><div class="status red">${esc(e.message)}</div><p class="muted">The dashboard did not substitute mock data.</p></div>`}}
 refresh();setInterval(refresh,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 </script>
-</body></html>
+<script>
+document.querySelectorAll('.room-nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.room-nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.room-panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('room-'+b.dataset.room).classList.add('active')}));
+(async()=>{try{const r=await get('research_hypotheses?select=hypothesis_key,direction,horizon_seconds,statement,frozen_at&order=hypothesis_key.asc');document.getElementById('roomHypotheses').innerHTML=r.map(h=>'<div class="registry-row"><div class="rk">'+esc(h.hypothesis_key)+'</div><p>'+esc(h.statement)+'<br><span style="color:#68737e">'+esc(h.direction)+' · '+fmt(Number(h.horizon_seconds)/3600,2)+'h · frozen '+esc(h.frozen_at||'—')+'</span></p><div class="rh">REGISTERED</div></div>').join('')}catch(e){document.getElementById('roomHypotheses').innerHTML='<div class="empty">SUPABASE RESEARCH REGISTRY UNAVAILABLE</div>'}
+try{const r=await get('agent_coordination_log?select=task_id,status,owner,lane,claim,updated_at,next_action&order=updated_at.desc&limit=30');document.getElementById('roomLedger').innerHTML=r.map(x=>'<div class="ledger-row"><b>'+esc(x.task_id)+'</b><span>'+esc(x.status)+' · '+esc(x.owner)+' · '+esc(x.lane)+'</span><p>'+esc(x.claim||'')+'<br><span style="color:#5f6974">Next: '+esc(x.next_action||'—')+'</span></p></div>').join('')||'<div class="empty">NO LEDGER ROWS EXPOSED</div>'}catch(e){document.getElementById('roomLedger').innerHTML='<div class="empty">COORDINATION LEDGER NOT EXPOSED TO ANONYMOUS READ — SOURCE IS SUPABASE / AGENTS PROTOCOL</div>'}
+try{const r=await fetch('https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT');if(!r.ok)throw 0;const x=await r.json();document.getElementById('binancePrice').textContent='</html>
++Number(x.lastPrice).toLocaleString('en-US',{maximumFractionDigits:2});document.getElementById('binanceState').textContent='LIVE READ';document.getElementById('binanceState').className='ok';document.getElementById('binanceMeta').textContent='24h '+(Number(x.priceChangePercent)>=0?'+':'')+Number(x.priceChangePercent).toFixed(2)+'% · volume '+Number(x.volume).toLocaleString('en-US',{maximumFractionDigits:0})+' BTC'}catch(e){document.getElementById('binanceState').textContent='UNAVAILABLE';document.getElementById('binancePrice').textContent='—';document.getElementById('binanceMeta').textContent='Public market endpoint unavailable; no value fabricated.'}})();
+</script></body></html>
