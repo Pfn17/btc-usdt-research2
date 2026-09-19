@@ -132,3 +132,45 @@ H-VOL1 is registered as family `fam-vol-v1`, protocol `v1-fdr-q005`, with status
 The owner-facing dashboard now exposes backend-derived H-VOL1 readiness only. It does not poll the outcome route, choose a cutoff, display profitability, or enable execution. Supabase readiness at `as_of_ms=1789064160000` reports `141,772` candles, `84` missing minutes versus `141,856` expected, `141,065` complete range windows, `141,772` valid taker ratios, no training/OOS split because no boundary was supplied, `outcome_run=false`, and `authorization=NOT GRANTED`. This is data-readiness evidence, not an outcome.
 
 The live Supabase registry already contained H-VOL1 objects under migrations `20260912075810`, `20260912075927`, and `20260912080008`, while those historical migration files were absent from GitHub `main`. A source-reconciliation migration and handoff were added rather than creating a parallel hypothesis or silently replacing the live lineage. No H-VOL1 profitability/OOS scan was run. Independent audit remains required before any cutoff is frozen or outcome is queried. Full details: `docs/H-VOL1_PREREGISTRATION.md` and `docs/AGENT_HANDOFF_2026-09-12_HVOL1.md`.
+
+
+## Stage-2 closure — 2026-09-20
+
+### H-MR1 — KILL
+
+Frozen OOS evaluation was executed with the owner-authorized boundary `2026-07-27T00:00:00Z` through the latest complete stored candle cutoff `2026-09-09T10:16:00Z`.
+
+- OOS samples: 190
+- Mean gross: +6.97 bps
+- Net EV: **-3.03 bps**
+- Stress net EV: **-5.03 bps**
+- Net CI95: **[-12.02, +5.96] bps**
+- Stress CI95: **[-14.02, +3.96] bps**
+- Positive weeks: 3 / 7
+
+Decision: **KILL** under the project gate because net EV is non-positive and the CI95 crosses zero. The result is recorded in `research_results`; trading remains disabled.
+
+Data note: the dataset still contains 84 missing one-minute timestamps in the wider coverage range. The frozen scan uses exact timestamp joins and therefore does not fabricate or bridge missing candles. The missing-minute fact remains part of the audit record.
+
+### H-VOL1 — KILL
+
+The frozen breakout/taker-flow scan was executed against the same owner-authorized OOS boundary.
+
+- OOS samples: 306
+- Mean gross: +1.48 bps
+- Net EV: **-8.52 bps**
+- Stress net EV: **-10.52 bps**
+- Net CI95: **[-14.90, -2.15] bps**
+- Stress CI95: **[-16.90, -4.15] bps**
+- Positive weeks: 1 / 7
+- Max positive-week contribution share: 43.17%
+
+Decision: **KILL**. Both economics and confidence are negative. No threshold retuning is permitted on this OOS.
+
+### H-SW1 — CLOSED / NO PARAMETER EDGE
+
+A closure robustness check was run for funding lookback values 2–5. The observed OOS result did not change: 17 signals, net EV **-19.43 bps**, CI95 **[-94.02, +55.15] bps** for the tested lookback values.
+
+This does **not** constitute a new confirmatory hypothesis or a license for post-hoc optimization. It shows that changing the existing lookback parameter did not expose a useful lever in this sample.
+
+Decision: **CLOSE H-SW1 for this dataset.** A materially different mechanism must receive a new hypothesis identity, preregistration, and independent OOS boundary. Do not continue tuning H-SW1 against the same OOS sample.
