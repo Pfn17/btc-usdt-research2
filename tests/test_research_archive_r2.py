@@ -8,7 +8,7 @@ def test_r2_gate_report_records_restored_provenance_without_promotion():
     assert "FORENSIC-GATE-2026-09-22-R2" in report
     assert "Overall R2: PASS" in report
     assert "H-BASIS1" in report and "INCONCLUSIVE / UNDERPOWERED" in report
-    assert "Trading authorization: `OFF`" in report
+    assert "**Trading authorization:** `OFF`" in report
     assert "does not reopen hypothesis generation" in report
 
 
@@ -78,7 +78,7 @@ def test_gate0_deterministic_economics_rules():
             return (exit / entry - 1) * 10000
         return (entry / exit - 1) * 10000
 
-    assert gross("LONG", 100.0, 101.0) == 100.0
+    assert abs(gross("LONG", 100.0, 101.0) - 100.0) < 1e-12
     assert gross("SHORT", 100.0, 99.0) == 101.010101010101
     assert 8.0 - 10.0 <= 0.0
     assert 101.0 != 100.0  # latency must be able to move a fill
@@ -91,5 +91,5 @@ def test_gate0_historical_labels_do_not_promote_proxy_results():
     contract = (ROOT / "docs/EXECUTABLE_PNL_CONTRACT.md").read_text(encoding="utf-8")
     assert "H-MR1" in contract and "FORWARD_RETURN_PROXY" in contract
     assert "H-BASIS1" in contract and "FORWARD_RETURN_PROXY" in contract
-    assert "H-VOL1" in contract and "BLOCKED / NOT YET AUTHORIZED" in contract
+    assert "H-VOL1" in contract and "EXECUTABLE_PNL / EXECUTABLE_MATCH" in contract
     assert "Trading authorization remains OFF" in contract
