@@ -303,3 +303,16 @@ After the H-BASIS1 provenance recovery, the existing forensic gate was replayed 
 **Overall R2: PASS as a regression/provenance gate only.** This does not promote any strategy, does not change any historical economic outcome, and does not reopen hypothesis generation. H-BASIS1 remains **INCONCLUSIVE / UNDERPOWERED** because its net proxy EV is negative and its OOS coverage is only three active UTC days. Research remains paused, historical evidence remains append-only, retuning is forbidden, and trading remains **OFF**.
 
 The dashboard now publishes the historical result archive, the recovered H-BASIS1 provenance detail, the project state `PAUSED — NO NEW HYPOTHESES`, the R2 gate state, and the `Founder & Principal Researcher` authority label as read-only research context.
+
+
+## Gate 0 — Executable PnL permission gate — 2026-09-22
+
+Gate 0 was upgraded from a cost document into a permission contract. Contract v1.1 defines three economic evidence classes: EXECUTABLE_PNL, FORWARD_RETURN_PROXY, and UNVERIFIABLE. Only the first class may support a profit or promotion claim.
+
+The contract now requires decision-time availability, signal/fill/evaluation timestamps, explicit entry and exit prices, applied latency, fees, slippage, funding cashflow when applicable, overlap state, invalid reason, dataset cutoff, and implementation identity. Missing evidence cannot silently become an executable trade.
+
+The deterministic economics harness run is GATE0-2026-09-22: 8/8 synthetic checks passed, covering LONG/SHORT formulas, 10 bps cost, latency fill shift, missing exit invalidation, overlap suppression, funding cashflow, and rejection of post-decision information. Supabase regression registry records the run and an overall Gate 0 PASS.
+
+Historical classification is intentionally conservative. H-MR1 and H-BASIS1 remain historical research evidence but are FORWARD_RETURN_PROXY under the v1.1 executable invariant. H-VOL1 remains unrun and unauthorized. H-FB3, H-FB2, H-FB1/Funding-sign, 4H Momentum, and H-SW1 require implementation-level reconciliation before any executable-PnL claim.
+
+Gate 0 PASS therefore means the contract and deterministic decision path are valid, not that any historical strategy is profitable. The next permission boundary remains: no new data capture or hypothesis discovery until representative historical implementations are reconciled against the v1.1 invariant.
