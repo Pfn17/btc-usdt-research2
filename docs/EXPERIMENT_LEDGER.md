@@ -316,3 +316,16 @@ The deterministic economics harness run is GATE0-2026-09-22: 8/8 synthetic check
 Historical classification is intentionally conservative. H-MR1 and H-BASIS1 remain historical research evidence but are FORWARD_RETURN_PROXY under the v1.1 executable invariant. H-VOL1 remains unrun and unauthorized. H-FB3, H-FB2, H-FB1/Funding-sign, 4H Momentum, and H-SW1 require implementation-level reconciliation before any executable-PnL claim.
 
 Gate 0 PASS therefore means the contract and deterministic decision path are valid, not that any historical strategy is profitable. The next permission boundary remains: no new data capture or hypothesis discovery until representative historical implementations are reconciled against the v1.1 invariant.
+
+
+## Gate 0.5 — Historical executable-PnL reconciliation — 2026-09-22
+
+Gate 0.5 decision: GATE_0_5_PASS_WITH_PROXY_LIMITATION.
+
+H-VOL1 is the representative historical implementation that satisfies the v1.1 executable-PnL invariant and reproduces its stored result deterministically: N=306, gross +1.4758597311 bps, net -8.5241402689 bps, stress -10.5241402689 bps, net CI95 [-14.9013323141, -2.1469482237]. It is therefore executable PnL evidence, but it is economically negative and does not qualify for profit promotion.
+
+H-MR1 and H-BASIS1 reproduce their historical results but are classified as FORWARD_RETURN_PROXY because their historical fill semantics do not satisfy the executable invariant. H-FB3 is blocked because its cited executor artifact is not recoverable as a repository commit. H-FB1, H-FB2, Family D momentum, and H-SW1 retain implementation/data blockers.
+
+No historical result satisfies the profit promotion gate. No historical result was overwritten or retuned. Trading remains OFF.
+
+Authorized next action is data-foundation engineering only: preserve the executable-PnL engine, build immutable microstructure capture, audit OI/liquidation semantics, and collect observation-only data. No new hypothesis outcome is authorized.
