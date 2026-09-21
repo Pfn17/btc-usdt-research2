@@ -21,7 +21,7 @@ details{border:1px solid var(--line);background:var(--panel);margin-top:7px}summ
 .searchbox{display:flex;gap:7px;border:1px solid var(--line);background:var(--panel);padding:7px}.searchbox input{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:11px}.searchbox button{border:1px solid var(--line2);background:#0a0e13;color:#b9c2ca;padding:6px 9px;cursor:pointer}
 .source-list{display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}.source-item{background:var(--panel);padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}.source-item button{border:0;background:transparent;color:#d6dce1;cursor:pointer;text-align:left}.source-item small{font:9px var(--mono);color:var(--dim)}
 .footer{padding-top:25px;color:var(--dim);font:9px var(--mono);display:flex;justify-content:space-between;gap:20px}
-.toast{position:fixed;right:20px;bottom:20px;z-index:80;max-width:390px;padding:11px 13px;border:1px solid var(--line2);background:#0b0f14;color:#b9c2ca;font:10px var(--mono);opacity:0;transform:translateY(8px);transition:opacity .18s,transform .18s;pointer-events:none}.toast.show{opacity:1;transform:none}
+.search-overlay{position:fixed;inset:0;z-index:100;background:rgba(8,10,13,.72);backdrop-filter:blur(3px);display:none;padding:10vh 20px 20px}.search-overlay.open{display:block}.search-panel{max-width:720px;margin:auto;border:1px solid var(--line2);background:#0b0f14;box-shadow:0 24px 80px rgba(0,0,0,.35)}.search-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}.search-panel input{width:100%;padding:18px 16px;border:0;border-bottom:1px solid var(--line);outline:0;background:#0a0e13;color:var(--text);font-size:15px}.search-results{max-height:55vh;overflow:auto}.search-result{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;color:#c9d0d7;padding:12px 15px;cursor:pointer}.search-result:hover,.search-result.active{background:#11171e;color:var(--text)}.search-result small{display:block;color:var(--dim);font:9px var(--mono);margin-top:3px}.toast{position:fixed;right:20px;bottom:20px;z-index:110;max-width:390px;padding:11px 13px;border:1px solid var(--line2);background:#0b0f14;color:#b9c2ca;font:10px var(--mono);opacity:0;transform:translateY(8px);transition:opacity .18s,transform .18s;pointer-events:none}.toast.show{opacity:1;transform:none}
 @media(max-width:1050px){.workspace{grid-template-columns:1fr}.rail{position:sticky;top:58px;z-index:30;background:rgba(8,10,13,.97);padding:7px 0;border-bottom:1px solid var(--line);display:flex;overflow:auto}.rail-title,.rail-note{display:none}.rail button{width:auto;white-space:nowrap;border-left:0;border-bottom:1px solid transparent}.rail button.active{border-bottom-color:var(--accent)}}@media(max-width:850px){.statebar{grid-template-columns:1fr 1fr}.statebar .lead{grid-column:1/-1}.grid.cols4,.grid.cols3{grid-template-columns:1fr 1fr}.hero{padding-top:38px}}@media(max-width:560px){main{padding:0 14px 55px}.top{padding:0 14px}.menu{display:block}.top-actions .live{display:none}.grid.cols4,.grid.cols3,.grid.cols2{grid-template-columns:1fr}.hero h1{font-size:50px}.hero-meta{gap:9px 14px}.statebar{grid-template-columns:1fr 1fr}.section-head{align-items:start;flex-direction:column}.fresh{margin-left:0}}
 </style>
 </head>
@@ -55,6 +55,7 @@ details{border:1px solid var(--line);background:var(--panel);margin-top:7px}summ
 <button data-target="data">Data</button>
 <button data-target="audit">Audit</button>
 <button data-target="infra">Infrastructure</button>
+<button data-target="sources">Source book</button>
 </nav>
 
 <div class="content">
@@ -109,6 +110,13 @@ details{border:1px solid var(--line);background:var(--panel);margin-top:7px}summ
 <div class="source-item"><button data-doc="docs/RESEARCH_STATE.md">Research state</button><small>Git / main</small></div>
 <div class="source-item"><button data-doc="docs/OWNER_DASHBOARD_VISIBILITY.md">Owner dashboard contract</button><small>Git / main</small></div>
 <div class="source-item"><button data-doc="docs/GATE_0_5_RECONCILIATION_2026-09-22.md">Gate 0.5 reconciliation</button><small>Git / main</small></div>
+<div class="source-item"><button data-doc="docs/EXECUTABLE_PNL_CONTRACT.md">Executable PnL contract</button><small>Git / main</small></div>
+<div class="source-item"><button data-doc="docs/RESULT_LINEAGE_MANIFEST_2026-09-22.md">Result lineage manifest</button><small>Git / main</small></div>
+<div class="source-item"><button data-doc="docs/REGRESSION_GATE_R2_2026-09-22.md">Regression gate R2</button><small>Git / main</small></div>
+<div class="source-item"><button data-doc="docs/PROJECT_FORENSIC_REVIEW_2026-09-22.md">Project forensic review</button><small>Git / main</small></div>
+<div class="source-item"><button data-doc="docs/RESEARCH_PROTOCOL.md">Research protocol</button><small>Git / main</small></div>
+<div class="source-item"><button data-doc="docs/OWNER_GOVERNANCE.md">Owner governance</button><small>Git / main</small></div>
+<div class="source-item"><button data-doc="docs/AGENT_HANDOFF_2026-09-08_TWO_METHODS.md">Agent handoff</button><small>Git / main</small></div>
 </div>
 <details id="docPanel"><summary>Selected repository note</summary><div id="docContent" class="detail">Choose a repository document above.</div></details>
 </section>
@@ -166,6 +174,13 @@ details{border:1px solid var(--line);background:var(--panel);margin-top:7px}summ
 </div>
 </main>
 <div id="toast" class="toast"></div>
+<div id="searchOverlay" class="search-overlay" aria-hidden="true">
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="Search HyperHan">
+    <div class="search-head"><span class="eyebrow">HYPERHAN NAVIGATOR</span><button id="searchClose" class="close">ESC</button></div>
+    <input id="searchInput" autocomplete="off" placeholder="Search sections, hypotheses, documents…" />
+    <div id="searchResults" class="search-results"></div>
+  </div>
+</div>
 <script>
 const SB='https://xaqsntunrqvqpzlbeutt.supabase.co';
 const KEY='sb_publishable_jcCZg32IQNJLjHZlytcu7w_hscMGOzj';
@@ -248,6 +263,7 @@ async function refresh(){
  document.getElementById('timeline').innerHTML=events.length?events.slice(0,10).map(e=>'<div class="event"><div class="when">'+esc(iso(e.when))+'</div><h3>'+esc(e.title)+'</h3><p>'+esc(e.body)+'</p></div>').join(''):'<div class="event"><div class="when">NO EVENTS</div><h3>Backend activity unavailable</h3><p>No value fabricated.</p></div>';
  const allOk=[hyp,results,lineage,contamination,health,decisions,gates,latest].some(x=>x.ok);
  if(allOk){sync.textContent='BACKEND · CONNECTED';sync.className='live ok';document.getElementById('projectState').textContent='RESEARCH · PAUSED'}else{sync.textContent='BACKEND · DEGRADED';sync.className='live bad';document.getElementById('projectState').textContent='BACKEND DEGRADED'}
+ return allOk;
 }
 async function loadAgents(){
  const state=document.getElementById('agentState');state.innerHTML='<span class="status warn">READING</span><b>Loading coordination ledger…</b><span class="fresh">one bounded read</span>';
@@ -262,14 +278,96 @@ async function loadDoc(path){
 }
 async function market(){
  const state=document.getElementById('marketState');
- try{const c=new AbortController();const t=setTimeout(()=>c.abort(),6000);const r=await fetch('https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT',{cache:'no-store',signal:c.signal});clearTimeout(t);if(!r.ok)throw Error('HTTP '+r.status);const x=await r.json();document.getElementById('binancePrice').textContent='$'+Number(x.lastPrice).toLocaleString('en-US',{maximumFractionDigits:2});document.getElementById('binanceMeta').textContent='24h '+(Number(x.priceChangePercent)>=0?'+':'')+Number(x.priceChangePercent).toFixed(2)+'% · volume '+Number(x.volume).toLocaleString('en-US',{maximumFractionDigits:0})+' BTC';state.textContent='LIVE READ';state.className='status ok';document.getElementById('marketFresh').textContent='updated '+new Date().toISOString()}catch(e){state.textContent='UNAVAILABLE';state.className='status bad';document.getElementById('binancePrice').textContent='—';document.getElementById('binanceMeta').textContent='Public market endpoint unavailable; no value fabricated.';document.getElementById('marketFresh').textContent='last read unavailable'}}
+ try{const c=new AbortController();const t=setTimeout(()=>c.abort(),6000);const r=await fetch('https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT',{cache:'no-store',signal:c.signal});clearTimeout(t);if(!r.ok)throw Error('HTTP '+r.status);const x=await r.json();document.getElementById('binancePrice').textContent='document.getElementById('binanceMeta').textContent='24h '+(Number(x.priceChangePercent)>=0?'+':'')+Number(x.priceChangePercent).toFixed(2)+'% · volume '+Number(x.volume).toLocaleString('en-US',{maximumFractionDigits:0})+' BTC';state.textContent='LIVE READ';state.className='status ok';document.getElementById('marketFresh').textContent='updated '+new Date().toISOString();return true}catch(e){state.textContent='UNAVAILABLE';state.className='status bad';document.getElementById('binancePrice').textContent='—';document.getElementById('binanceMeta').textContent='Public market endpoint unavailable; no value fabricated.';document.getElementById('marketFresh').textContent='last read unavailable';return false}}
 document.querySelectorAll('.rail button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.rail button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.target).scrollIntoView({behavior:'smooth',block:'start'})}));
 document.getElementById('refreshAll').addEventListener('click',async e=>{e.currentTarget.disabled=true;try{await refresh();toast('Backend refresh complete.')}finally{e.currentTarget.disabled=false}});
 document.getElementById('drawerClose').addEventListener('click',()=>document.getElementById('resultDrawer').classList.remove('open'));
 document.getElementById('loadAgents').addEventListener('click',loadAgents);
 document.querySelectorAll('[data-doc]').forEach(b=>b.addEventListener('click',()=>loadDoc(b.dataset.doc)));
-document.getElementById('searchOpen').addEventListener('click',()=>{const q=prompt('Search HyperHan');if(q){const target=['research','ledger','agents','data','audit','infra','sources'].find(id=>document.getElementById(id).innerText.toLowerCase().includes(q.toLowerCase()));if(target)document.getElementById(target).scrollIntoView({behavior:'smooth'})}});
-refresh();market();setInterval(refresh,60000);setInterval(market,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();market()}});
+const SEARCH_ITEMS=[
+ ['Overview','Owner-first current state','overview'],
+ ['Research','Historical results and hypothesis registry','research'],
+ ['Ledger','Decisions, gates and chronology','ledger'],
+ ['Agents & notes','Agent coordination and repository notes','agents'],
+ ['Data','Observed datasets, gaps and availability','data'],
+ ['Audit','Regression gates, lineage and executable-PnL evidence','audit'],
+ ['Infrastructure','Provider and market-source state','infra'],
+ ['Source book','GitHub / Supabase / dashboard source map','sources'],
+ ['AGENTS.md','Agent operating contract','agents','AGENTS.md'],
+ ['Experiment ledger','Research chronology and decisions','agents','docs/EXPERIMENT_LEDGER.md'],
+ ['Research state','Current project state','agents','docs/RESEARCH_STATE.md'],
+ ['Executable PnL contract','Economic evidence contract','agents','docs/EXECUTABLE_PNL_CONTRACT.md'],
+ ['Gate 0.5 reconciliation','Historical reconciliation record','agents','docs/GATE_0_5_RECONCILIATION_2026-09-22.md']
+];
+let searchIndex=0;
+function openSearch(){
+ const o=document.getElementById('searchOverlay');o.classList.add('open');o.setAttribute('aria-hidden','false');
+ const i=document.getElementById('searchInput');i.value='';renderSearch('');setTimeout(()=>i.focus(),20);
+}
+function closeSearch(){const o=document.getElementById('searchOverlay');o.classList.remove('open');o.setAttribute('aria-hidden','true')}
+function renderSearch(q){
+ const hits=SEARCH_ITEMS.filter(x=>(x[0]+' '+x[1]).toLowerCase().includes(q.toLowerCase())).slice(0,12);
+ searchIndex=0;
+ document.getElementById('searchResults').innerHTML=hits.length?hits.map((x,i)=>'<button class="search-result '+(i===0?'active':'')+'" data-search-target="'+esc(x[2])+'" data-search-doc="'+esc(x[3]||'')+'">'+esc(x[0])+'<small>'+esc(x[1])+'</small></button>').join(''):'<div class="detail">No matching source or section. No value fabricated.</div>';
+ document.querySelectorAll('.search-result').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.searchTarget;closeSearch();if(b.dataset.searchDoc)loadDoc(b.dataset.searchDoc);document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'})}));
+}
+document.getElementById('searchOpen').addEventListener('click',openSearch);
+document.getElementById('searchClose').addEventListener('click',closeSearch);
+document.getElementById('searchOverlay').addEventListener('click',e=>{if(e.target.id==='searchOverlay')closeSearch()});
+document.getElementById('searchInput').addEventListener('input',e=>renderSearch(e.target.value));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSearch();if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch()}});
+const schedule={research:60000,market:15000};
+let refreshTimer=null,marketTimer=null,researchBackoff=0,marketBackoff=0;
+function armResearch(ms){clearTimeout(refreshTimer);refreshTimer=setTimeout(async()=>{const ok=await refresh();researchBackoff=ok?0:Math.min(researchBackoff+1,4);armResearch(Math.min(schedule.research*Math.pow(2,researchBackoff),900000));},ms)}
+function armMarket(ms){clearTimeout(marketTimer);marketTimer=setTimeout(async()=>{const ok=await market();marketBackoff=ok?0:Math.min(marketBackoff+1,4);armMarket(Math.min(schedule.market*Math.pow(2,marketBackoff),240000));},ms)}
+(async()=>{const r=await refresh();researchBackoff=r?0:1;armResearch(schedule.research);const m=await market();marketBackoff=m?0:1;armMarket(schedule.market)})();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();market()}});
+</script>
+</body>
+</html>+Number(x.lastPrice).toLocaleString('en-US',{maximumFractionDigits:2});document.getElementById('binanceMeta').textContent='24h '+(Number(x.priceChangePercent)>=0?'+':'')+Number(x.priceChangePercent).toFixed(2)+'% · volume '+Number(x.volume).toLocaleString('en-US',{maximumFractionDigits:0})+' BTC';state.textContent='LIVE READ';state.className='status ok';document.getElementById('marketFresh').textContent='updated '+new Date().toISOString()}catch(e){state.textContent='UNAVAILABLE';state.className='status bad';document.getElementById('binancePrice').textContent='—';document.getElementById('binanceMeta').textContent='Public market endpoint unavailable; no value fabricated.';document.getElementById('marketFresh').textContent='last read unavailable';return false}}
+document.querySelectorAll('.rail button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.rail button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.target).scrollIntoView({behavior:'smooth',block:'start'})}));
+document.getElementById('refreshAll').addEventListener('click',async e=>{e.currentTarget.disabled=true;try{await refresh();toast('Backend refresh complete.')}finally{e.currentTarget.disabled=false}});
+document.getElementById('drawerClose').addEventListener('click',()=>document.getElementById('resultDrawer').classList.remove('open'));
+document.getElementById('loadAgents').addEventListener('click',loadAgents);
+document.querySelectorAll('[data-doc]').forEach(b=>b.addEventListener('click',()=>loadDoc(b.dataset.doc)));
+const SEARCH_ITEMS=[
+ ['Overview','Owner-first current state','overview'],
+ ['Research','Historical results and hypothesis registry','research'],
+ ['Ledger','Decisions, gates and chronology','ledger'],
+ ['Agents & notes','Agent coordination and repository notes','agents'],
+ ['Data','Observed datasets, gaps and availability','data'],
+ ['Audit','Regression gates, lineage and executable-PnL evidence','audit'],
+ ['Infrastructure','Provider and market-source state','infra'],
+ ['Source book','GitHub / Supabase / dashboard source map','sources'],
+ ['AGENTS.md','Agent operating contract','agents','AGENTS.md'],
+ ['Experiment ledger','Research chronology and decisions','agents','docs/EXPERIMENT_LEDGER.md'],
+ ['Research state','Current project state','agents','docs/RESEARCH_STATE.md'],
+ ['Executable PnL contract','Economic evidence contract','agents','docs/EXECUTABLE_PNL_CONTRACT.md'],
+ ['Gate 0.5 reconciliation','Historical reconciliation record','agents','docs/GATE_0_5_RECONCILIATION_2026-09-22.md']
+];
+let searchIndex=0;
+function openSearch(){
+ const o=document.getElementById('searchOverlay');o.classList.add('open');o.setAttribute('aria-hidden','false');
+ const i=document.getElementById('searchInput');i.value='';renderSearch('');setTimeout(()=>i.focus(),20);
+}
+function closeSearch(){const o=document.getElementById('searchOverlay');o.classList.remove('open');o.setAttribute('aria-hidden','true')}
+function renderSearch(q){
+ const hits=SEARCH_ITEMS.filter(x=>(x[0]+' '+x[1]).toLowerCase().includes(q.toLowerCase())).slice(0,12);
+ searchIndex=0;
+ document.getElementById('searchResults').innerHTML=hits.length?hits.map((x,i)=>'<button class="search-result '+(i===0?'active':'')+'" data-search-target="'+esc(x[2])+'" data-search-doc="'+esc(x[3]||'')+'">'+esc(x[0])+'<small>'+esc(x[1])+'</small></button>').join(''):'<div class="detail">No matching source or section. No value fabricated.</div>';
+ document.querySelectorAll('.search-result').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.searchTarget;closeSearch();if(b.dataset.searchDoc)loadDoc(b.dataset.searchDoc);document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'})}));
+}
+document.getElementById('searchOpen').addEventListener('click',openSearch);
+document.getElementById('searchClose').addEventListener('click',closeSearch);
+document.getElementById('searchOverlay').addEventListener('click',e=>{if(e.target.id==='searchOverlay')closeSearch()});
+document.getElementById('searchInput').addEventListener('input',e=>renderSearch(e.target.value));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSearch();if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch()}});
+const schedule={research:60000,market:15000};
+let refreshTimer=null,marketTimer=null,researchBackoff=0,marketBackoff=0;
+function armResearch(ms){clearTimeout(refreshTimer);refreshTimer=setTimeout(async()=>{const ok=await refresh();researchBackoff=ok?0:Math.min(researchBackoff+1,4);armResearch(Math.min(schedule.research*Math.pow(2,researchBackoff),900000));},ms)}
+function armMarket(ms){clearTimeout(marketTimer);marketTimer=setTimeout(async()=>{const ok=await market();marketBackoff=ok?0:Math.min(marketBackoff+1,4);armMarket(Math.min(schedule.market*Math.pow(2,marketBackoff),240000));},ms)}
+(async()=>{const r=await refresh();researchBackoff=r?0:1;armResearch(schedule.research);const m=await market();marketBackoff=m?0:1;armMarket(schedule.market)})();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){refresh();market()}});
 </script>
 </body>
 </html>
