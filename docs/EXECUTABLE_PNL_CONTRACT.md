@@ -82,18 +82,18 @@ Gross, baseline net, stress net, and forward-return proxy values must never be d
 
 Gate 0 is a permission gate. PASS WITH PROXY LIMITATION cannot enter a profit promotion path.
 
-## Historical audit matrix — 2026-09-22
+## Historical audit matrix — Gate 0.5 — 2026-09-22
 
-| Result | Entry / exit | Latency | Costs | Funding | Missing / overlap | Economic class | Gate 0 |
-|---|---|---|---|---|---|---|---|
-| H-FB3 | Frozen next 1m open / fifth held 1m close documented | One-candle boundary documented | 10 / 12 bps frozen | Not part of mechanism | Exact non-overlap documented; dataset has audited gaps | Needs implementation-level replay | BLOCKED pending source replay |
-| H-MR1 | Next available open; exit allowed within a 1h–2h timestamp window in implementation | Not an explicit fill-latency model | 10 / 12 bps | Not applicable | Row-based 15m lag and tolerant exit can alter elapsed-time semantics | FORWARD_RETURN_PROXY | PASS WITH PROXY LIMITATION |
-| H-BASIS1 | Historical implementation uses mark-price proxy, not independently frozen exchange fill | Entry delay is 1 minute in historical analysis | 10 / 12 bps | Not modeled as funding cashflow | Historical non-overlap; raw extract replayable | FORWARD_RETURN_PROXY | PASS WITH PROXY LIMITATION |
-| H-VOL1 | Frozen next 1m open / exact 120m elapsed exit | One-candle delay documented | 10 / 12 bps | Not applicable | Exact timestamps required; outcome not run | UNRUN | BLOCKED / NOT YET AUTHORIZED |
-| H-FB1 / Funding-sign | Historical forward/funding-event statistics exist, but project-wide executable invariant was not captured | Not sufficient for current invariant | Historical 10 bps convention | Funding semantics vary | Historical provenance requires separate replay | UNVERIFIABLE / PROXY | BLOCKED |
-| H-FB2 | Funding-event mark-price entry documented | Execution fill not independently captured | 10 bps documented | Funding cashflow included in frozen rule | Historical result exists; current Gate 0 replay not yet performed | FORWARD_RETURN_PROXY until replay | BLOCKED pending source replay |
-| 4H Momentum | Historical return statistic; executable entry/exit evidence not fully reconciled | Not fully evidenced | 10 bps historical convention | Not applicable | Not fully reconciled | UNVERIFIABLE | BLOCKED |
-| H-SW1 | Multiple historical signatures/methods | Not fully reconciled | Cost-adjusted result exists | Funding agreement logic varies | Provenance identity must be selected before executable claim | UNVERIFIABLE | BLOCKED |
+| Result | Required economic evidence | Replay / lineage | Classification | Gate 0.5 |
+|---|---|---|---|---|
+| H-MR1 | Next-1m-open entry exists, but exit is first available close in a 60–120 minute timestamp window; latency is not an explicit market-latency model | Canonical v2 replay exact: N=190 and stored metrics match | FORWARD_RETURN_PROXY / PROXY_REPLAY_MATCH | PASS WITH PROXY LIMITATION |
+| H-VOL1 | Next-1m-open entry and exact +120m open-time exit; 10/12 bps costs; deterministic timestamps; gaps excluded by exact joins | Canonical v2 replay exact: N=306 and stored metrics match | EXECUTABLE_PNL / EXECUTABLE_MATCH | PASS |
+| H-BASIS1 | Historical event uses mark-price directional return proxy; no independently frozen exchange fill price | Exact historical Python implementation replay restored: N=156 and metrics match | FORWARD_RETURN_PROXY / PROXY_REPLAY_MATCH | PASS WITH PROXY LIMITATION |
+| H-FB3 | Preregistration defines next-1m-open entry and fifth-held-1m-close exit, but exact executor artifact is not recoverable from the shared repository commit claimed by the preregistration | Result and frozen dataset identity exist; executor commit e51c4f... is not present in repository | BLOCKED_NO_CANONICAL_IMPLEMENTATION | BLOCKED |
+| H-FB2 | Funding-event mark-price entry; execution fill not independently captured | Historical result retained but canonical executable implementation not reconciled | FORWARD_RETURN_PROXY | BLOCKED |
+| H-FB1 / Funding-sign | Historical funding-event statistics; project-wide executable fill invariant not captured | Frozen code version and dataset metadata exist, but no executable fill contract replay | INSUFFICIENT_DATA | BLOCKED |
+| 4H Momentum / Family D | Historical OHLCV momentum statistic; executable entry/exit semantics not fully reconciled to v1.1 | Result and model-run identity exist; implementation contract evidence incomplete | INSUFFICIENT_DATA | BLOCKED |
+| H-SW1 | Multiple implementation lineages; funding/price agreement logic; executable fill contract not unified | Claude and Manus signatures are distinct and documented; no single executable canonical identity | BLOCKED_NO_CANONICAL_IMPLEMENTATION | BLOCKED |
 
 ## Interpretation
 
