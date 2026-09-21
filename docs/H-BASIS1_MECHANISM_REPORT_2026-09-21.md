@@ -47,6 +47,8 @@ The sensitivity cells were frozen in advance and are shown without selecting a w
 
 The sensitivity table does not provide evidence of a cost-adjusted mechanism. All four horizons have negative mean net proxy returns, and all have negative bootstrap intervals in this analysis. The convergence rates remain below 50% at every frozen horizon.
 
+For the primary 15-minute OOS cell, the predeclared block-length sensitivity remained negative: the 12-hour block interval was **[−11.58, −7.78] bps**, and the 48-hour block interval was **[−10.39, −9.61] bps**. These sensitivity intervals were recorded descriptively and were not used to select a horizon or a decision.
+
 ## Persistence and distribution diagnostics
 
 The raw basis distribution is strongly asymmetric over this short collection window. Its median is **−4.2902 bps**, with the 1st and 99th percentiles at approximately **−6.6914 bps** and **−1.2854 bps**. This is why the specification uses a local six-hour baseline rather than a zero-centered basis rule.
@@ -67,7 +69,7 @@ Trading authorization remains **OFF**. No order path was added or enabled. No pr
 
 - Specification hash: `f9b3c6cefc7986c6785d2cb4c3434ba6fb834a888ad7bf8fbf3f6d324198c08e`.
 - Dataset hash: `3ce9038421d76c3bf077dc3f5e3261a25311670286cca3801d90f113be470d79`.
-- Mechanism script: `/tmp/analyze_hbasis1.py` during this run; the reproducible source will be committed with the preregistration and report.
+- Mechanism script: `scripts/analyze_hbasis1_mechanism.py` in commit `5146f6a`; it reproduces the committed analysis artifact from the frozen raw extract.
 - Bootstrap: 2,000 resamples, UTC-day event blocks, seed `20260921`, percentile interval.
 - Cost model: 4 bps fee per side plus 1 bps slippage per side; 10 bps baseline round trip and 12 bps stress.
 - Outcome classification: mechanism-stage `INCONCLUSIVE / UNDERPOWERED`; no promotion or production readiness claim.

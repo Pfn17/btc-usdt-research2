@@ -51,6 +51,13 @@ def bootstrap_ci(values_by_day, seed=20260921, samples=2000):
     means.sort()
     return {'mean':statistics.mean([v for d in days for v in values_by_day[d]]),'ci_low':means[int(.025*samples)],'ci_high':means[min(samples-1,int(.975*samples))],'n':n,'days':len(days)}
 
+def bootstrap_ci_hours(events, field, block_hours, seed=20260921, samples=2000):
+    blocks=defaultdict(list)
+    block_ms=block_hours*60*60*1000
+    for e in events:
+        blocks[int(e['signal_ms'])//block_ms].append(e[field])
+    return bootstrap_ci(blocks, seed=seed, samples=samples)
+
 def summarize(events,h):
     out={}
     for split,es in [('train',[e for e in events if e['signal_ms']<=train_end]),('oos',[e for e in events if e['signal_ms']>=out_start])]:
@@ -61,9 +68,11 @@ def summarize(events,h):
             byday[day(e['signal_ms'])].append(e['net_bps'])
             if e['converged_50'] is not None:cday[day(e['signal_ms'])].append(1 if e['converged_50'] else 0)
         ci=bootstrap_ci(byday)
+        ci12=bootstrap_ci_hours(es,'net_bps',12)
+        ci48=bootstrap_ci_hours(es,'net_bps',48)
         cci=bootstrap_ci(cday)
         times_to=[e['time_to_conv_min'] for e in es if e['time_to_conv_min'] is not None]
-        out[split]={'n':len(es),'active_days':len(byday),'gross_mean_bps':statistics.mean(gross) if gross else None,'net_mean_bps':statistics.mean(net) if net else None,'stress_mean_bps':statistics.mean([x-2 for x in net]) if net else None,'hit_rate':sum(x>0 for x in net)/len(net) if net else None,'net_ci95_block_day':ci,'convergence_n':len(conv),'convergence_rate':statistics.mean(conv) if conv else None,'convergence_ci95_block_day':cci,'median_time_to_convergence_min':statistics.median(times_to) if times_to else None,'mean_time_to_convergence_min':statistics.mean(times_to) if times_to else None,'censored_exit_count':sum(1 for e in es if e['exit_ms'] is None),'mean_overshoot_ratio':statistics.mean([e['overshoot_ratio'] for e in es if e['overshoot_ratio'] is not None]) if es else None,'mean_adverse_excursion_bps':statistics.mean([e['adverse_excursion_bps'] for e in es if e['adverse_excursion_bps'] is not None]) if es else None,'net_by_day':{k:{'n':len(v),'mean_net_bps':statistics.mean(v)} for k,v in sorted(byday.items())}}
+        out[split]={'n':len(es),'active_days':len(byday),'gross_mean_bps':statistics.mean(gross) if gross else None,'net_mean_bps':statistics.mean(net) if net else None,'stress_mean_bps':statistics.mean([x-2 for x in net]) if net else None,'hit_rate':sum(x>0 for x in net)/len(net) if net else None,'net_ci95_block_day':ci,'net_ci95_block_12h':ci12,'net_ci95_block_48h':ci48,'convergence_n':len(conv),'convergence_rate':statistics.mean(conv) if conv else None,'convergence_ci95_block_day':cci,'median_time_to_convergence_min':statistics.median(times_to) if times_to else None,'mean_time_to_convergence_min':statistics.mean(times_to) if times_to else None,'censored_exit_count':sum(1 for e in es if e['exit_ms'] is None),'mean_overshoot_ratio':statistics.mean([e['overshoot_ratio'] for e in es if e['overshoot_ratio'] is not None]) if es else None,'mean_adverse_excursion_bps':statistics.mean([e['adverse_excursion_bps'] for e in es if e['adverse_excursion_bps'] is not None]) if es else None,'net_by_day':{k:{'n':len(v),'mean_net_bps':statistics.mean(v)} for k,v in sorted(byday.items())}}
     return out
 
 def build_events(horizon_min):
