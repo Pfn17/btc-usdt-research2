@@ -162,7 +162,7 @@ details{border:1px solid var(--line);background:var(--panel);margin-top:7px}summ
 
 <section id="sources">
 <div class="section-head"><div><div class="eyebrow">08 · Source book</div><h2>Everything has a source</h2><p>Git is the documentation layer; Supabase is the research/data layer; this page is the visual operating layer.</p></div></div>
-<div class="grid cols3">
+<div class="cell" style="grid-column:1/-1"><div class="k">Repository notes</div><p style="margin-top:7px">Browse the current documentation tree on demand. The dashboard does not copy the repository into a second database.</p><button class="tool" id="browseDocs" style="margin-top:10px">Browse all repository notes</button><div id="docsBrowser" style="margin-top:10px"></div></div></div><div class="grid cols3">
 <div class="cell"><div class="k">Code</div><div class="metric" style="font-size:14px">GitHub</div><p>Canonical implementation, tests, Agent.md and research documents.</p><a class="small" href="https://github.com/Pfn17/btc-usdt-research2" target="_blank" rel="noreferrer">OPEN REPOSITORY ↗</a></div>
 <div class="cell"><div class="k">Data</div><div class="metric" style="font-size:14px">Supabase</div><p>Results, lineage, gates, decisions, collector state and market records.</p><a class="small" href="https://supabase.com/dashboard/project/xaqsntunrqvqpzlbeutt" target="_blank" rel="noreferrer">OPEN PROJECT ↗</a></div>
 <div class="cell"><div class="k">Visual layer</div><div class="metric" style="font-size:14px">Dashboard</div><p>Read-only interface. No research outcome RPC is started automatically.</p></div>
@@ -302,6 +302,18 @@ document.getElementById('refreshAll').addEventListener('click',async e=>{e.curre
 document.getElementById('drawerClose').addEventListener('click',()=>document.getElementById('resultDrawer').classList.remove('open'));
 document.getElementById('loadAgents').addEventListener('click',loadAgents);
 document.querySelectorAll('[data-doc]').forEach(b=>b.addEventListener('click',()=>loadDoc(b.dataset.doc)));
+async function browseDocs(){
+ const box=document.getElementById('docsBrowser');box.innerHTML='<span class="status warn">READING GITHUB</span>';
+ try{
+  const r=await fetch(GITHUB+'docs',{headers:{Accept:'application/vnd.github+json'},cache:'force-cache'});
+  if(!r.ok)throw Error('GitHub '+r.status);
+  const items=await r.json();
+  const files=items.filter(x=>x.type==='file'&&/\\.(md|txt|json)$/i.test(x.name)).sort((a,b)=>a.name.localeCompare(b.name));
+  box.innerHTML=files.length?'<div class="source-list">'+files.map(x=>'<div class="source-item"><button data-doc="'+esc(x.path)+'">'+esc(x.name)+'</button><small>Git / main · '+num(x.size,0)+' bytes</small></div>').join('')+'</div>':'<span class="status warn">NO DOCUMENT FILES RETURNED</span>';
+  box.querySelectorAll('[data-doc]').forEach(b=>b.addEventListener('click',()=>loadDoc(b.dataset.doc)));
+ }catch(e){box.innerHTML='<span class="status bad">UNAVAILABLE</span><p class="small">'+esc(e.message)+'</p>'}
+}
+document.getElementById('browseDocs').addEventListener('click',browseDocs);
 const SEARCH_ITEMS=[
  ['Overview','Owner-first current state','overview'],
  ['Research','Historical results and hypothesis registry','research'],
