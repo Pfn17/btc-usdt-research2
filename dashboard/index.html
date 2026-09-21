@@ -278,7 +278,25 @@ async function loadDoc(path){
 }
 async function market(){
  const state=document.getElementById('marketState');
- try{const c=new AbortController();const t=setTimeout(()=>c.abort(),6000);const r=await fetch('https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT',{cache:'no-store',signal:c.signal});clearTimeout(t);if(!r.ok)throw Error('HTTP '+r.status);const x=await r.json();document.getElementById('binancePrice').textContent='}catch(e){state.textContent='UNAVAILABLE';state.className='status bad';document.getElementById('binancePrice').textContent='—';document.getElementById('binanceMeta').textContent='Public market endpoint unavailable; no value fabricated.';document.getElementById('marketFresh').textContent='last read unavailable';return false}}
+ try{
+  const c=new AbortController();const t=setTimeout(()=>c.abort(),6000);
+  const r=await fetch('https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT',{cache:'no-store',signal:c.signal});
+  clearTimeout(t);
+  if(!r.ok)throw Error('HTTP '+r.status);
+  const x=await r.json();
+  document.getElementById('binancePrice').textContent='$'+Number(x.lastPrice).toLocaleString('en-US',{maximumFractionDigits:2});
+  document.getElementById('binanceMeta').textContent='24h '+(Number(x.priceChangePercent)>=0?'+':'')+Number(x.priceChangePercent).toFixed(2)+'% · volume '+Number(x.volume).toLocaleString('en-US',{maximumFractionDigits:0})+' BTC';
+  state.textContent='LIVE READ';state.className='status ok';
+  document.getElementById('marketFresh').textContent='updated '+new Date().toISOString();
+  return true;
+ }catch(e){
+  state.textContent='UNAVAILABLE';state.className='status bad';
+  document.getElementById('binancePrice').textContent='—';
+  document.getElementById('binanceMeta').textContent='Public market endpoint unavailable; no value fabricated.';
+  document.getElementById('marketFresh').textContent='last read unavailable';
+  return false;
+ }
+}
 document.querySelectorAll('.rail button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.rail button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.target).scrollIntoView({behavior:'smooth',block:'start'})}));
 document.getElementById('refreshAll').addEventListener('click',async e=>{e.currentTarget.disabled=true;try{await refresh();toast('Backend refresh complete.')}finally{e.currentTarget.disabled=false}});
 document.getElementById('drawerClose').addEventListener('click',()=>document.getElementById('resultDrawer').classList.remove('open'));
