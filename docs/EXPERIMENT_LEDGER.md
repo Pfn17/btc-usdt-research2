@@ -174,3 +174,25 @@ A closure robustness check was run for funding lookback values 2–5. The observ
 This does **not** constitute a new confirmatory hypothesis or a license for post-hoc optimization. It shows that changing the existing lookback parameter did not expose a useful lever in this sample.
 
 Decision: **CLOSE H-SW1 for this dataset.** A materially different mechanism must receive a new hypothesis identity, preregistration, and independent OOS boundary. Do not continue tuning H-SW1 against the same OOS sample.
+
+
+## Research system review — 2026-09-21
+
+The project is pausing expansion of the hypothesis registry after repeated candidates failed to produce a validated, cost-adjusted trading edge. This is **not** a claim that the market has no edge. It is a checkpoint on whether the research system itself is capable of discovering an executable edge reliably.
+
+The review scope is project-wide and must cover:
+
+- **Data layer:** historical coverage, timestamp continuity, sampling frequency, missing data, extraction boundaries, and whether the collected fields are sufficient for the hypotheses being asked.
+- **Feature layer:** timestamp alignment, leakage, availability at decision time, window construction, sparse snapshots, and feature correctness.
+- **Hypothesis layer:** mechanism quality, testability, parameter freezing, entry/exit derivation, and whether rules are being selected before outcomes rather than after them.
+- **Economics / execution model:** actual entry and exit price definitions, fees, slippage, latency, funding, overlap handling, and whether reported EV represents executable PnL.
+- **OOS / statistics:** independent boundaries, regime coverage, sample dependence, contamination, extraction errors, and whether OOS is genuinely independent and sufficiently representative.
+- **Agent workflow:** writer/verifier separation, reproducibility, evidence quality, coordination discipline, and whether agent activity is producing research value rather than documentation volume.
+
+### Current decision
+
+**PAUSE NEW HYPOTHESES.** Do not respond to the lack of profitability by simply adding another candidate. First verify that the research engine, data model, hypothesis construction, execution model, and validation pipeline are sound.
+
+Existing experiment outcomes remain append-only evidence. No killed or inconclusive hypothesis may be rewritten or retuned merely to improve its result. Trading remains **OFF**.
+
+The next permitted research milestone is a **project-level forensic review** followed by an owner-reviewed decision on whether the existing research architecture is fit for another hypothesis cycle.
