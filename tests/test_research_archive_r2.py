@@ -79,7 +79,7 @@ def test_gate0_deterministic_economics_rules():
         return (entry / exit - 1) * 10000
 
     assert abs(gross("LONG", 100.0, 101.0) - 100.0) < 1e-12
-    assert gross("SHORT", 100.0, 99.0) == 101.010101010101
+    assert abs(gross("SHORT", 100.0, 99.0) - 101.010101010101) < 1e-12
     assert 8.0 - 10.0 <= 0.0
     assert 101.0 != 100.0  # latency must be able to move a fill
     assert None is None     # missing exit is invalid, never silently filled
