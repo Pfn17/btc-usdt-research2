@@ -7,7 +7,8 @@ PREREG = (ROOT / "docs/H-FB3_PREREGISTRATION.md").read_text(encoding="utf-8")
 
 
 def test_hfb3_persisted_result_is_read_from_public_api():
-    assert "research_results?select=" in DASHBOARD\n    assert "research_lineage_manifest?select=" in DASHBOARD
+    assert "research_results?select=" in DASHBOARD
+    assert "research_lineage_manifest?select=" in DASHBOARD
     assert "cost_adjusted_ev" in DASHBOARD
     assert "confidence_interval" in DASHBOARD
     assert "H-FB3" in DASHBOARD
