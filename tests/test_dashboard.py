@@ -19,8 +19,8 @@ def test_dashboard_is_explicitly_read_only():
 def test_dashboard_is_an_owner_first_research_archive():
     html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
     assert "research record" in html.lower()
-    assert "What exists today" in html
-    assert "Frozen boundary & data integrity" in html
+    assert "What is happening now" in html
+    assert "What the database can actually support" in html
     assert "Find edges. Reject noise." not in html
     assert "Research control room" in html
     assert "Execution" in html and "OFF" in html
