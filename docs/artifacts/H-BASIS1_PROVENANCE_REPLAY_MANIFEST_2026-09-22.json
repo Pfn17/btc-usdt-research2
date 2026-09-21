@@ -1,0 +1,76 @@
+{
+  "status": "PROVENANCE RESTORED",
+  "hypothesis_key": "H-BASIS1",
+  "historical_result_id": "907bf0bb-9ed5-4456-94ce-cf8dda2b5e26",
+  "historical_result_immutable": true,
+  "historical_implementation": {
+    "repository_path": "scripts/analyze_hbasis1_mechanism.py",
+    "commit_sha": "5146f6ab173fad888e23558234822627ce801a30",
+    "commit_time": "2026-09-21T13:31:39Z",
+    "script_sha256": "1614afcd8217c7820d9022b1014a063cd0dff6d7f658573d66ef000c2a8e5109",
+    "function": "build_events(horizon_min)",
+    "signature": "build_events(horizon_min)"
+  },
+  "dataset": {
+    "source": "public.funding_basis_snapshots",
+    "symbol": "BTCUSDT",
+    "rows": 10510,
+    "dataset_hash": "3ce9038421d76c3bf077dc3f5e3261a25311670286cca3801d90f113be470d79",
+    "first_server_time_ms": 1788410096000,
+    "last_server_time_ms": 1789064163000,
+    "query_cutoff_server_time_ms": 1789064163000,
+    "raw_json_sha256": "140f8fd10eb876f0499ada3e7704ed78fe0ee6c8d8830c02d130eb8357072887"
+  },
+  "specification": {
+    "spec_hash": "f9b3c6cefc7986c6785d2cb4c3434ba6fb834a888ad7bf8fbf3f6d324198c08e",
+    "train_end_ms": 1788825599999,
+    "oos_start_ms": 1788825600000,
+    "baseline_window_hours": 6,
+    "min_baseline_snapshots": 30,
+    "threshold": "train_abs_residual_p90",
+    "threshold_value_bps": 1.551082,
+    "entry_delay_min": 1,
+    "primary_horizon_min": 15,
+    "exit_tolerance_min": 2,
+    "cost_baseline_rt_bps": 10,
+    "cost_stress_rt_bps": 12,
+    "bootstrap": {
+      "block": "UTC calendar day",
+      "samples": 2000,
+      "seed": 20260921,
+      "percentile": [2.5, 97.5]
+    }
+  },
+  "replay": {
+    "output_artifact": "docs/artifacts/H-BASIS1_HISTORICAL_REPLAY_2026-09-22.json",
+    "primary_horizon": 15,
+    "event_rows_exact_match": true,
+    "n": 156,
+    "active_oos_days": 3,
+    "gross_mean_bps": -1.0956948753997517,
+    "net_mean_bps": -11.09569487539975,
+    "stress_mean_bps": -13.09569487539975,
+    "net_ci95_low_bps": -13.526151211184727,
+    "net_ci95_high_bps": -8.55302646754086,
+    "convergence_count": 53,
+    "convergence_rate": 0.33974358974358976,
+    "convergence_ci95_low": 0.1987179487179487,
+    "convergence_ci95_high": 0.4807692307692308,
+    "median_time_to_convergence_min": 2.024983333333333,
+    "censored_exit_count": 0
+  },
+  "current_rpc_mismatch": {
+    "function": "research_funding_basis_scan_frozen(bigint,integer,integer,numeric,numeric)",
+    "agreement_0_count": 7412,
+    "agreement_1_count": 2862,
+    "preserved_unchanged": true
+  },
+  "controls": {
+    "parameter_retuning": false,
+    "parameter_search": false,
+    "new_hypothesis": false,
+    "historical_result_modified": false,
+    "production_rpc_modified": false,
+    "trading_authorization": "OFF"
+  }
+}
