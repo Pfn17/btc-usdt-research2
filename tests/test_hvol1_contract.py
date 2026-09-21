@@ -74,7 +74,7 @@ def test_hvol1_api_has_manual_scan_and_dashboard_readiness_only():
     assert "H-VOL1" in dashboard
     assert "research_hvol1_scan_public" not in dashboard
     assert "research_hvol1_scan_frozen" not in dashboard
-    for token in ("H-VOL1", "readinessMetrics", "missing_minute_count", "oos_boundary_frozen"):
+    for token in ("H-VOL1", "research_results?select=", "research_lineage_manifest?select=", "No live outcome scan is executed from the dashboard."):
         assert token in dashboard
     assert "NOT GRANTED" in dashboard
     assert "Execution" in dashboard and "OFF" in dashboard
