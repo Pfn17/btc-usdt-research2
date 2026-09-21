@@ -1,0 +1,9 @@
+{
+  "n": 10510,
+  "dataset_hash": "3ce9038421d76c3bf077dc3f5e3261a25311670286cca3801d90f113be470d79",
+  "first_server_time_ms": 1788410096000,
+  "last_server_time_ms": 1789064163000,
+  "first_utc": "2026-09-03T04:34:56+00:00",
+  "last_utc": "2026-09-10T18:16:03+00:00",
+  "query_cutoff_server_time_ms": 1789064163000
+}

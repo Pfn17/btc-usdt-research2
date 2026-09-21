@@ -1,0 +1,35 @@
+{
+  "spec_payload": {
+    "hypothesis_id": "H-BASIS1",
+    "family": "H-BASIS1_BASIS_CONVERGENCE",
+    "protocol": "H-BASIS1_MECHANISM_V1",
+    "freeze_utc": "2026-09-21T20:27:00Z",
+    "data_table": "public.funding_basis_snapshots",
+    "symbol": "BTCUSDT",
+    "train_start_ms": 1788410096000,
+    "train_end_ms": 1788825599999,
+    "oos_start_ms": 1788825600000,
+    "oos_end_ms": 1789064163000,
+    "baseline": "prior_6h_median_basis_bps",
+    "min_baseline_snapshots": 30,
+    "threshold": "train_abs_residual_p90",
+    "entry_delay_ms": 60000,
+    "horizons_min": [
+      5,
+      15,
+      30,
+      60
+    ],
+    "exit_tolerance_ms": 120000,
+    "convergence": "abs_exit_residual <= 0.5*abs_entry_residual",
+    "non_overlap": "next_signal_after_scheduled_exit",
+    "fee_bps_per_side": 4,
+    "slippage_bps_per_side": 1,
+    "baseline_cost_rt_bps": 10,
+    "stress_cost_rt_bps": 12,
+    "bootstrap_block": "UTC calendar day",
+    "bootstrap_samples": 2000,
+    "bootstrap_seed": 20260921
+  },
+  "spec_hash": "f9b3c6cefc7986c6785d2cb4c3434ba6fb834a888ad7bf8fbf3f6d324198c08e"
+}
