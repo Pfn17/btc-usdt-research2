@@ -55,3 +55,22 @@ def test_landing_page_exists_and_links_to_console():
     html = landing.read_text(encoding="utf-8")
     assert "HyperHan Lab" in html
     assert "dashboard" in html.lower()
+
+
+def test_dashboard_interactions_have_real_handlers_and_no_broken_market_renderer():
+    html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
+    assert "function openSearch()" in html
+    assert "data-target="sources"" in html
+    assert "data-doc="docs/EXECUTABLE_PNL_CONTRACT.md"" in html
+    assert "return allOk;" in html
+    assert "return true}catch(e)" in html
+    assert "document.getElementById('binancePrice').textContent='$'+Number(x.lastPrice)" in html
+    assert "textContent='document.getElementById('binanceMeta')" not in html
+
+
+def test_dashboard_live_refresh_has_backoff_and_does_not_poll_when_hidden():
+    html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
+    assert "const schedule={research:60000,market:15000}" in html
+    assert "Math.pow(2,researchBackoff)" in html
+    assert "Math.pow(2,marketBackoff)" in html
+    assert "document.addEventListener('visibilitychange'" in html
