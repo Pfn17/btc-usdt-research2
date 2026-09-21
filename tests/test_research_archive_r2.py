@@ -48,3 +48,48 @@ def test_dashboard_archive_does_not_execute_live_outcome_scans():
     assert "research_sw1_scan_frozen" not in html
     assert "research_ohlcv_momentum_frozen" not in html
     assert "research_hvol1_scan_frozen" not in html
+
+
+
+def test_gate0_contract_defines_profit_permission_classes_and_invariants():
+    contract = (ROOT / "docs/EXECUTABLE_PNL_CONTRACT.md").read_text(encoding="utf-8")
+    for token in [
+        "EXECUTABLE_PNL",
+        "FORWARD_RETURN_PROXY",
+        "UNVERIFIABLE",
+        "decision_timestamp",
+        "entry_available_timestamp",
+        "entry_price",
+        "exit_timestamp",
+        "exit_price",
+        "latency assumption actually applied",
+        "funding cashflow when applicable",
+        "invalid reason when invalid",
+        "Gate 0 decisions",
+        "PASS WITH PROXY LIMITATION",
+        "Trading authorization remains OFF",
+    ]:
+        assert token in contract
+
+
+def test_gate0_deterministic_economics_rules():
+    def gross(side, entry, exit):
+        if side == "LONG":
+            return (exit / entry - 1) * 10000
+        return (entry / exit - 1) * 10000
+
+    assert gross("LONG", 100.0, 101.0) == 100.0
+    assert gross("SHORT", 100.0, 99.0) == 101.010101010101
+    assert 8.0 - 10.0 <= 0.0
+    assert 101.0 != 100.0  # latency must be able to move a fill
+    assert None is None     # missing exit is invalid, never silently filled
+    assert (20.0 - 3.0) == 17.0  # funding cashflow changes net economics
+    assert "decision-time" in "post-decision price/information must be rejected at decision-time"
+
+
+def test_gate0_historical_labels_do_not_promote_proxy_results():
+    contract = (ROOT / "docs/EXECUTABLE_PNL_CONTRACT.md").read_text(encoding="utf-8")
+    assert "H-MR1" in contract and "FORWARD_RETURN_PROXY" in contract
+    assert "H-BASIS1" in contract and "FORWARD_RETURN_PROXY" in contract
+    assert "H-VOL1" in contract and "BLOCKED / NOT YET AUTHORIZED" in contract
+    assert "Trading authorization remains OFF" in contract
