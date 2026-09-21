@@ -26,8 +26,9 @@ def test_sw1_api_is_read_only_and_parameter_locked() -> None:
 
 def test_dashboard_has_real_sw1_bindings_and_no_execution_claim() -> None:
     html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
-    assert "research_sw1_scan_frozen" in html
-    assert "LIVE OOS REFERENCE" in html
-    assert "Frozen OOS-end cutoff" in html
-    assert "Backend state and result are shown exactly as returned" in html
+    assert "H-SW1" in html
+    assert "research_results?select=" in html
+    assert "research_lineage_manifest?select=" in html
+    assert "No live outcome scan is executed from the dashboard." in html
+    assert "research_sw1_scan_frozen" not in html
     assert "Execution" in html and "OFF" in html
