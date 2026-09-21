@@ -294,3 +294,12 @@ All stale `proposed` / `in_progress` coordination entries were locked as histori
 The remaining blocker is exact historical provenance recovery for H-BASIS1. The next action is not a new edge search and not retuning; it is to recover and identify the implementation that generated the N=156 result, then rerun the regression gate.
 
 Trading remains **OFF**.
+
+
+## Forensic gate R2 — 2026-09-22
+
+After the H-BASIS1 provenance recovery, the existing forensic gate was replayed as `FORENSIC-GATE-2026-09-22-R2`. All six required checks passed: the four synthetic decision-path scenarios, canonical H-MR1 replay, and exact historical H-BASIS1 replay. The H-BASIS1 replay matched N=156 and the stored primary 15-minute metrics using the historical implementation commit and frozen dataset hash. The current funding-basis RPC was not substituted for the recovered historical implementation.
+
+**Overall R2: PASS as a regression/provenance gate only.** This does not promote any strategy, does not change any historical economic outcome, and does not reopen hypothesis generation. H-BASIS1 remains **INCONCLUSIVE / UNDERPOWERED** because its net proxy EV is negative and its OOS coverage is only three active UTC days. Research remains paused, historical evidence remains append-only, retuning is forbidden, and trading remains **OFF**.
+
+The dashboard now publishes the historical result archive, the recovered H-BASIS1 provenance detail, the project state `PAUSED — NO NEW HYPOTHESES`, the R2 gate state, and the `Founder & Principal Researcher` authority label as read-only research context.
