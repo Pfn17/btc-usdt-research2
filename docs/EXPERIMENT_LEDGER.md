@@ -196,3 +196,21 @@ The review scope is project-wide and must cover:
 Existing experiment outcomes remain append-only evidence. No killed or inconclusive hypothesis may be rewritten or retuned merely to improve its result. Trading remains **OFF**.
 
 The next permitted research milestone is a **project-level forensic review** followed by an owner-reviewed decision on whether the existing research architecture is fit for another hypothesis cycle.
+
+
+## Research validation harness — 2026-09-22
+
+A synthetic validation harness was executed before allowing another hypothesis cycle. The purpose is to test the decision path itself, not to manufacture a market result.
+
+Run: `HARNESS-2026-09-22`
+
+| Scenario | Expected | Observed | Harness |
+|---|---|---|---|
+| Known positive synthetic edge | PASS | PASS | PASS |
+| Synthetic edge below declared cost | KILL | KILL | PASS |
+| Synthetic look-ahead / leakage | REJECT | REJECT | PASS |
+| Train-only synthetic edge that fails OOS | KILL | KILL | PASS |
+
+The four scenarios all matched their expected decisions. The known-positive scenario used net EV +18 bps with CI95 [-2, +38] bps; this confirms the path can recognize a positive net-EV case, while the separate promotion gate still correctly requires CI95 to clear zero before a real candidate is promoted.
+
+The harness is validation evidence only. It is not evidence of a BTCUSDT trading edge and does not reopen hypothesis expansion. Trading remains **OFF** and the project-level forensic review remains the next milestone.
