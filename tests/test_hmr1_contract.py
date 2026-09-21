@@ -31,18 +31,17 @@ def test_hmr1_api_is_manual_and_read_only():
     assert "setInterval" not in api[api.index('async def research_hmr1'):]
 
 
-def test_hmr1_dashboard_reads_readiness_without_running_outcome():
+def test_hmr1_dashboard_reads_persisted_result_without_running_outcome():
     dashboard = DASHBOARD.read_text(encoding="utf-8")
-    runtime = dashboard[dashboard.index("if(k==='H-MR1')"):dashboard.index("if(k==='H-VOL1')")]
-    assert "research_hmr1_readiness" in runtime
-    assert "READINESS ONLY · OUTCOME UNRUN" in runtime
-    assert "research_hmr1_scan_frozen" not in runtime
-    assert "research_hmr1" in dashboard
+    assert "research_results?select=" in dashboard
+    assert "research_lineage_manifest?select=" in dashboard
+    assert "H-MR1" in dashboard
+    assert "research_hmr1_scan_frozen" not in dashboard
+    assert "READINESS ONLY · OUTCOME UNRUN" not in dashboard
 
 
 def test_hmr1_does_not_add_execution_path():
     dashboard = DASHBOARD.read_text(encoding="utf-8")
-    runtime = dashboard[dashboard.index("if(k==='H-MR1')"):dashboard.index("if(k==='H-VOL1')")]
-    assert "research_hmr1_scan_frozen" not in runtime
-    assert "createOrder" not in runtime and "place_order" not in runtime
+    assert "research_hmr1_scan_frozen" not in dashboard
+    assert "createOrder" not in dashboard and "place_order" not in dashboard
     assert "OFF" in dashboard
