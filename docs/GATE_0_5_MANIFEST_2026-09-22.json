@@ -1,0 +1,80 @@
+{
+  "gate": "0.5",
+  "decision": "GATE_0_5_PASS_WITH_PROXY_LIMITATION",
+  "date": "2026-09-22",
+  "items": [
+    {
+      "hypothesis": "H-MR1",
+      "result_id": "7d34c319-f9b0-4762-99af-3b050d8975c8",
+      "classification": "FORWARD_RETURN_PROXY",
+      "replay": "PROXY_REPLAY_MATCH",
+      "implementation": "research_hmr1_scan_frozen_v2(bigint,bigint,numeric,numeric,numeric)",
+      "code_version": "research_hmr1_scan_frozen_v2",
+      "dataset_hash": "ohlcv_1m:141772;coverage_gap=84m;cutoff=1789064160000"
+    },
+    {
+      "hypothesis": "H-VOL1",
+      "result_id": "f538467e-3a1c-49d3-b205-12cb1fc08c59",
+      "classification": "EXECUTABLE_PNL",
+      "replay": "EXECUTABLE_MATCH",
+      "implementation": "research_hvol1_scan_frozen_v2(bigint,bigint,numeric,numeric,numeric)",
+      "code_version": "research_hvol1_scan_frozen_v2",
+      "dataset_hash": "ohlcv_1m:141772;coverage_gap=84m;cutoff=1789064160000"
+    },
+    {
+      "hypothesis": "H-BASIS1",
+      "result_id": "907bf0bb-9ed5-4456-94ce-cf8dda2b5e26",
+      "classification": "FORWARD_RETURN_PROXY",
+      "replay": "PROXY_REPLAY_MATCH",
+      "implementation": "scripts/analyze_hbasis1_mechanism.py::build_events",
+      "code_version": "5146f6ab173af888e23558234822627ce801a30",
+      "dataset_hash": "3ce9038421d76c3bf077dc3f5e3261a25311670286cca3801d90f113be470d79"
+    },
+    {
+      "hypothesis": "H-FB3",
+      "result_id": "60723d89-d7f6-490e-9d2c-aea0c0c222e9",
+      "classification": "BLOCKED_NO_CANONICAL_IMPLEMENTATION",
+      "replay": "NOT_RUN",
+      "implementation": "preregistration-defined next-1m-open/fifth-held-1m-close",
+      "code_version": "fd712a286f4ef79476da11dcf985a8650c7008eb",
+      "dataset_hash": "fc50dad316294d51f4dcde2a1d08b6450d4561cd2d9353717f1f7bfe2b215947"
+    },
+    {
+      "hypothesis": "H-FB1",
+      "result_id": "6bd0aa47-a6a9-4bb1-9d53-2fcc9cae7dfe",
+      "classification": "INSUFFICIENT_DATA",
+      "replay": "NOT_RUN",
+      "implementation": "research_funding_hfb1@20s_timeout_fix",
+      "code_version": "research_funding_hfb1@20s_timeout_fix",
+      "dataset_hash": "funding_rate_events:n=275;first=1780761600000;last=1788652800000"
+    },
+    {
+      "hypothesis": "H-FB2",
+      "result_id": null,
+      "classification": "FORWARD_RETURN_PROXY",
+      "replay": "BLOCKED",
+      "implementation": null,
+      "code_version": null,
+      "dataset_hash": null
+    },
+    {
+      "hypothesis": "Family D Momentum",
+      "result_id": "f0c04673-c0ad-4a3a-a4eb-61b0cbced297",
+      "classification": "INSUFFICIENT_DATA",
+      "replay": "BLOCKED",
+      "implementation": "research_ohlcv_momentum_nonoverlap_frozen@v1",
+      "code_version": "research_ohlcv_momentum_nonoverlap_frozen@v1",
+      "dataset_hash": "ohlcv_1m:n=563;first=1780567260000;last=1788660060000"
+    },
+    {
+      "hypothesis": "H-SW1",
+      "result_id": "ed222262-78ef-4ee6-91ef-ab1b7b9ecde2",
+      "classification": "BLOCKED_NO_CANONICAL_IMPLEMENTATION",
+      "replay": "BLOCKED",
+      "implementation": "research_sw1_scan_frozen@v1 plus Manus lineage",
+      "code_version": "research_sw1_scan_frozen@v1",
+      "dataset_hash": "ohlcv_1m+funding_rate_events joint, n_candidates=91, n_signal=37"
+    }
+  ],
+  "trading_status": "OFF"
+}
