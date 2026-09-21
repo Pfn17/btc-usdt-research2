@@ -214,3 +214,33 @@ Run: `HARNESS-2026-09-22`
 The four scenarios all matched their expected decisions. The known-positive scenario used net EV +18 bps with CI95 [-2, +38] bps; this confirms the path can recognize a positive net-EV case, while the separate promotion gate still correctly requires CI95 to clear zero before a real candidate is promoted.
 
 The harness is validation evidence only. It is not evidence of a BTCUSDT trading edge and does not reopen hypothesis expansion. Trading remains **OFF** and the project-level forensic review remains the next milestone.
+
+
+## Project forensic review — 2026-09-22
+
+The project-level forensic review was executed before allowing another hypothesis cycle. Full report: `docs/PROJECT_FORENSIC_REVIEW_2026-09-22.md`.
+
+### Findings
+
+- **Data:** 141,772 OHLCV 1m rows; 84 missing minutes remain part of the audit record. Funding basis has 10,510 snapshots, with only about 3 active OOS days in the recent H-BASIS1 mechanism scan. `feature_snapshots` currently has 0 rows.
+- **Features:** the synthetic leakage harness passes, but production research RPCs still require function-level independent replay before any future promotion.
+- **Hypothesis lineage:** the live migration history contains repeated repair/replacement/fast-path migrations. Multiple H-MR1/H-VOL1 implementations exist, and H-SW1 has two signatures. This is a reproducibility risk even when the final persisted result is correct.
+- **Economics:** the 10 bps baseline and 12 bps stress model are consistently declared, but executable-PnL semantics must become a project-wide invariant covering exact signal availability, fill price, latency, funding cashflow, and overlap.
+- **OOS/statistics:** no validated net-positive edge has been produced. Several results are economically negative; others are underpowered because independent time/regime coverage is short.
+- **Agent workflow:** the coordination log contains stale proposed/in-progress states. Prior independent audits found real implementation/provenance mismatches, confirming that executor/verifier separation must be enforced rather than merely documented.
+
+### Decision
+
+**PAUSE NEW HYPOTHESES.**
+
+The research engine is not proven broken, but the project is not yet clean enough to justify another hypothesis cycle. The next gate is to repair provenance and verification hygiene:
+
+1. canonical implementation per historical result;
+2. lock/supersede stale coordination tasks;
+3. result-lineage manifest;
+4. independent replay of representative killed and inconclusive results;
+5. explicit executable-PnL contract;
+6. minimum independent-time requirement for promotion;
+7. retain the synthetic harness as a regression test.
+
+Historical evidence remains append-only. No failed result is retuned. Trading remains **OFF**.
