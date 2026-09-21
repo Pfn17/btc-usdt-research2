@@ -244,3 +244,53 @@ The research engine is not proven broken, but the project is not yet clean enoug
 7. retain the synthetic harness as a regression test.
 
 Historical evidence remains append-only. No failed result is retuned. Trading remains **OFF**.
+
+
+## Forensic gate execution — 2026-09-22
+
+The forensic gate was executed in four parts.
+
+### 1. Canonical lineage
+
+A result-lineage manifest is now recorded in `docs/RESULT_LINEAGE_MANIFEST_2026-09-22.md`.
+
+- H-MR1 canonical implementation: `research_hmr1_scan_frozen_v2(bigint,bigint,numeric,numeric,numeric)`.
+- H-MR1 replay matched the stored result exactly: N=190, net EV -3.0303795 bps, stress -5.0303795 bps, with matching confidence bounds.
+- H-BASIS1 cannot currently be reproduced from the live canonical RPC. The historical result was N=156, while the current RPC replay returns N=7,412 for agreement=0 and N=2,862 for agreement=1.
+- H-BASIS1 is therefore marked **MISMATCH / provenance blocked** until the exact historical implementation is recovered.
+
+This is a reproducibility finding, not a claim that the historical result was fabricated.
+
+### 2. Independent replay
+
+The representative killed result H-MR1 passed canonical replay. The representative inconclusive result H-BASIS1 failed the reproducibility check because the current implementation does not generate the historical result.
+
+No result was rewritten and no parameter was changed.
+
+### 3. Executable-PnL contract
+
+`docs/EXECUTABLE_PNL_CONTRACT.md` freezes v1.0.
+
+The contract requires explicit decision-time availability, executable entry/exit rules, 4 bps fee + 1 bps slippage per side baseline, 12 bps stress, latency treatment, funding cashflow where applicable, overlap rules, missing-data invalidation, and minimum independent-time coverage for promotion.
+
+A gross forward-return proxy is not to be represented as executable PnL unless these fields are satisfied.
+
+### 4. Regression gate
+
+Run: `FORENSIC-GATE-2026-09-22`.
+
+The four synthetic harness scenarios all passed. H-MR1 canonical replay passed. H-BASIS1 canonical replay failed.
+
+Therefore the overall regression gate is **BLOCKED**, not passed.
+
+### Agent-state hygiene
+
+All stale `proposed` / `in_progress` coordination entries were locked as historical trace on 2026-09-22. No stale task is allowed to silently reopen hypothesis work.
+
+### Current decision
+
+**PAUSE NEW HYPOTHESES remains in force.**
+
+The remaining blocker is exact historical provenance recovery for H-BASIS1. The next action is not a new edge search and not retuning; it is to recover and identify the implementation that generated the N=156 result, then rerun the regression gate.
+
+Trading remains **OFF**.
