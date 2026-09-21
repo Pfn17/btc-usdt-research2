@@ -39,3 +39,12 @@ def test_dashboard_keeps_execution_off_and_no_order_path():
     assert "Execution" in html and "OFF" in html
     assert "No live signals or promoted strategies" in html
     assert "order" not in html.lower() or "order path" in html.lower()
+
+
+def test_dashboard_archive_does_not_execute_live_outcome_scans():
+    html = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
+    assert "No live outcome scan is executed from the dashboard." in html
+    assert "research_funding_hfb1" not in html
+    assert "research_sw1_scan_frozen" not in html
+    assert "research_ohlcv_momentum_frozen" not in html
+    assert "research_hvol1_scan_frozen" not in html
