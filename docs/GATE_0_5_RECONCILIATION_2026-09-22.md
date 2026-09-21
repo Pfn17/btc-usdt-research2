@@ -68,7 +68,7 @@ Classification: FORWARD_RETURN_PROXY / BLOCKED pending implementation reconcilia
 
 ### 4H Momentum / Family D
 Result: f0c04673-c0ad-4a3a-a4eb-61b0cbced297
-Model run: d5aded1f-a3cf-4cf7-8431-e201ea2710a5
+Model run: d5aded1f-a3d7-456b-88d8-bb1cd4ff5f63
 Code version: research_ohlcv_momentum_nonoverlap_frozen@v1
 Dataset identity: ohlcv_1m:n=563;first=1780567260000;last=1788660060000
 Classification: INSUFFICIENT_DATA.
