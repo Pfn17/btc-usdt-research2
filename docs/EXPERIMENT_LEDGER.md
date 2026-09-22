@@ -356,3 +356,30 @@ The table is append-only at the row level. Corrections require a new `record_ver
 Initial historical records have been backfilled for H-MR1, H-VOL1, and H-BASIS1 from surviving project evidence. H-MR1 and H-VOL1 are recorded as internal-origin because their preregistrations explicitly describe them as new mechanisms with no external citation. H-BASIS1 origin remains `NOT_RECOVERABLE_FROM_CURRENT_RECORD`; the system does not guess its source.
 
 This contract is a **memory/provenance improvement only**. It does not reopen hypothesis generation, change historical results, or alter the current research pause. Trading remains **OFF**.
+
+
+## Historical data architecture — 2026-09-22
+
+The project now records external historical datasets separately from raw storage. Supabase is **not** intended to become the raw historical-data warehouse.
+
+Target flow:
+
+external authoritative source / permitted archive -> immutable external/local archive -> research compute -> compact evidence/results -> Supabase
+
+Supabase should retain dataset identity, provenance, checksums, research state, results, replay metadata and bounded dashboard state. Large raw candles, trades, order books, OI, liquidation and similar historical payloads should remain outside Supabase when practical.
+
+A new append-only registry was applied to production:
+
+`public.research_dataset_registry`
+
+Migration:
+`supabase/migrations/20260922193000_create_research_dataset_registry.sql`
+
+The registry stores source URI, symbol/timeframe, period, storage class/location, checksum, provenance and redistribution status. It does not store raw market payloads. Update/delete are rejected; corrections require a new dataset identity/version.
+
+External repository findings are preserved in:
+`docs/HISTORICAL_DATA_FINDINGS_QUEUE.md`
+
+Current findings are **queue-only**. No strategy was imported, no fork was made, and no external raw dataset was copied. Before any data extraction, source availability and redistribution terms must be verified.
+
+Trading remains **OFF**.
