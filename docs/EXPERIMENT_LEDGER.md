@@ -329,3 +329,30 @@ H-MR1 and H-BASIS1 reproduce their historical results but are classified as FORW
 No historical result satisfies the profit promotion gate. No historical result was overwritten or retuned. Trading remains OFF.
 
 Authorized next action is data-foundation engineering only: preserve the executable-PnL engine, build immutable microstructure capture, audit OI/liquidation semantics, and collect observation-only data. No new hypothesis outcome is authorized.
+
+
+## Hypothesis memory contract — 2026-09-22
+
+A canonical **Hypothesis Record** is now required before any future hypothesis outcome is queried.
+
+The record is persisted in Supabase table `public.research_hypothesis_records` and governed by `docs/HYPOTHESIS_RECORD_CONTRACT.md`. The dashboard is only a read-only presentation layer.
+
+Each record preserves, where recoverable:
+- origin type and source/reference;
+- research question and rationale;
+- mechanism;
+- variables and exact equations;
+- frozen parameters;
+- entry/exit and invalid-data rules;
+- cost model;
+- validation/promotion gates;
+- implementation/result/dataset lineage;
+- final decision and provenance status.
+
+Origin must be classified explicitly as `EXTERNAL_REFERENCE`, `INTERNAL_HYPERHAN`, `DERIVED_FROM_EXISTING_HYPOTHESIS`, `RESEARCH_RECOMBINATION`, or `NOT_RECOVERABLE_FROM_CURRENT_RECORD`. Agents must not infer or invent an external reference for a historical hypothesis.
+
+The table is append-only at the row level. Corrections require a new `record_version`; update/delete mutations are rejected by database trigger. RLS is enabled and there is no public read policy. A future public dashboard surface must expose only a bounded, deliberate read model.
+
+Initial historical records have been backfilled for H-MR1, H-VOL1, and H-BASIS1 from surviving project evidence. H-MR1 and H-VOL1 are recorded as internal-origin because their preregistrations explicitly describe them as new mechanisms with no external citation. H-BASIS1 origin remains `NOT_RECOVERABLE_FROM_CURRENT_RECORD`; the system does not guess its source.
+
+This contract is a **memory/provenance improvement only**. It does not reopen hypothesis generation, change historical results, or alter the current research pause. Trading remains **OFF**.
