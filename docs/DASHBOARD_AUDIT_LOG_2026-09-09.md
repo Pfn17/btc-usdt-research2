@@ -90,3 +90,10 @@ The change remains bounded to `dashboard/index.html`, `tests/test_dashboard.py`,
 Vercel production deployment `dpl_BiGpJC66AtjrgaV5qC7ttBQgHqqL` for full commit `c2bedd9a7c8c32b781ce10b6aee49a9644f6d7f1` reached `READY` and was observed under the production target. Canonical `https://btc-usdt-research2.vercel.app/` returned the corrected `READY · OBSERVED` and `UNVERIFIED` provider labels, no `BUILDING*` or `FAILED*` markers, and the read-only H-VOL1 readiness endpoint returned `NOT_READY` with `outcome_run=false`. Browser verification showed the dashboard reached `LIVE`, rendered 8 registered hypotheses and live collector facts, and the browser console had no output/errors.
 
 Railway remains intentionally labeled `UNVERIFIED`: the Railway console did not expose readable service state in this session, so the dashboard does not claim healthy or failed. This is the final evidence boundary for this release.
+
+
+## Canonical archive bindings on remote main — 2026-09-22
+
+Remote `main` advanced to `b3ae942` with concurrent Gate R2, provenance, hypothesis-record, dataset-registry, and external-source architecture work. The earlier local commit was preserved on backup branch `manus/archive-office-c61` rather than force-pushed. Only the missing owner-facing bindings were ported onto the remote state: dataset registry metadata, canonical hypothesis records, and a bounded public coordination summary view. Existing no-scan, backoff, research-gate, and trading-OFF behavior was preserved.
+
+Migration `20260922203000_public_read_research_archive_views.sql` is SELECT-only for anonymous/authenticated readers and revokes public write operations. The dashboard shows the honest empty dataset state and canonical records without importing raw historical data or external strategies. Validation on the reconciled remote tree: JavaScript check passed; **80 tests passed, 2 skipped**; two pre-existing integration-marker warnings remain.

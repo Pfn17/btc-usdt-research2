@@ -115,6 +115,8 @@ details{border:1px solid var(--line);background:var(--panel);margin-top:7px}summ
 <div class="source-item"><button data-doc="docs/REGRESSION_GATE_R2_2026-09-22.md">Regression gate R2</button><small>Git / main</small></div>
 <div class="source-item"><button data-doc="docs/PROJECT_FORENSIC_REVIEW_2026-09-22.md">Project forensic review</button><small>Git / main</small></div>
 <div class="source-item"><button data-doc="docs/RESEARCH_PROTOCOL.md">Research protocol</button><small>Git / main</small></div>
+<div class="source-item"><button data-doc="docs/HISTORICAL_DATA_FINDINGS_QUEUE.md">Historical data findings queue</button><small>Git / main · findings only</small></div>
+<div class="source-item"><button data-doc="docs/HYPOTHESIS_RECORD_CONTRACT.md">Hypothesis record contract</button><small>Git / main · canonical</small></div>
 <div class="source-item"><button data-doc="docs/OWNER_GOVERNANCE.md">Owner governance</button><small>Git / main</small></div>
 <div class="source-item"><button data-doc="docs/AGENT_HANDOFF_2026-09-08_TWO_METHODS.md">Agent handoff</button><small>Git / main</small></div>
 </div>
@@ -135,6 +137,7 @@ details{border:1px solid var(--line);background:var(--panel);margin-top:7px}summ
 <div class="cell"><span class="status warn">FOUNDATION</span><h3>Order book / microstructure</h3><p>Collector and integrity code exist; observation-only coverage is the next foundation step.</p></div>
 <div class="cell"><span class="status bad">UNAVAILABLE</span><h3>Open interest / liquidation</h3><p>No production OI or liquidation table was present in the audited schema. The dashboard will not invent it.</p></div>
 </div><div class="cell" style="margin-top:10px"><div class="k">Data integrity boundaries</div><div id="contaminationList" style="margin-top:8px">Reading contamination_intervals…</div></div>
+<div style="height:10px"></div><div class="grid cols2"><div class="cell"><div class="k">Dataset registry</div><p style="margin-top:7px">Canonical metadata only. Raw historical payloads remain outside Supabase when practical.</p><div id="datasetRegistry" style="margin-top:8px">Reading research_dataset_registry…</div></div><div class="cell"><div class="k">Canonical hypothesis memory</div><p style="margin-top:7px">Persisted records from <span class="mono">research_hypothesis_records</span>; missing provenance stays explicit.</p><div id="canonicalHypotheses" style="margin-top:8px">Reading research_hypothesis_records…</div></div></div>
 </section>
 
 <section id="audit">
@@ -227,7 +230,7 @@ function openResult(id,rows,lineage){
 }
 async function refresh(){
  const sync=document.getElementById('sync');sync.textContent='BACKEND · READING';sync.className='live';
- const [hyp,results,lineage,contamination,health,decisions,gates,latest]=await Promise.all([
+ const [hyp,results,lineage,contamination,health,decisions,gates,latest,datasets,canonical]=await Promise.all([
   safe('research_hypotheses?select=id,hypothesis_key,statement,direction,horizon_seconds,target_definition,feature_set,frozen_at&order=hypothesis_key.asc'),
   safe('research_results?select=id,model_run_id,sample_count,expectancy,cost_adjusted_ev,hit_rate,confidence_interval,bootstrap,fdr,regime_stability,period_concentration,status,created_at&order=created_at.desc'),
   safe('research_lineage_manifest?select=id,hypothesis_key,result_id,canonical_function,canonical_signature,code_version,dataset_hash,replay_status,replay_notes,verifier,verified_at,created_at&order=id.asc'),
@@ -235,9 +238,11 @@ async function refresh(){
   safe('collector_health?select=feed_status,integrity_status,events_received,events_applied,duplicate_events,sequence_gaps,resync_count,stale_after_ms,latency_ms,contamination_active,updated_at&order=updated_at.desc&limit=1'),
   safe('owner_decisions?select=id,decision_type,title,decision,owner_reason,scope,related_task,related_hypothesis,related_commit,status,effective_at,recorded_by&status=eq.ACTIVE&order=effective_at.desc'),
   safe('research_regression_gate?select=id,run_id,test_name,expected,observed,pass,evidence,created_at&order=created_at.desc&limit=12'),
-  safe('ohlcv_1m?select=open_time_ms,close&symbol=eq.BTCUSDT&interval=eq.1m&order=open_time_ms.desc&limit=1')
+  safe('ohlcv_1m?select=open_time_ms,close&symbol=eq.BTCUSDT&interval=eq.1m&order=open_time_ms.desc&limit=1'),
+  safe('research_dataset_registry?select=dataset_id,source_type,source_uri,source_name,symbol,timeframe,storage_class,sha256,provenance_status,redistributable_status,immutable,created_at&order=created_at.desc&limit=50'),
+  safe('research_hypothesis_records?select=hypothesis_id,record_version,title,family,status,origin_type,origin_reference,research_question,provenance_status,source_documents,created_at&order=created_at.desc&limit=50')
  ]);
- const hs=remember('hyp',hyp),rs=remember('results',results),lm=remember('lineage',lineage),ci=remember('contamination',contamination),ch=remember('health',health),od=remember('decisions',decisions),gt=remember('gates',gates),lc=remember('latest',latest);
+ const hs=remember('hyp',hyp),rs=remember('results',results),lm=remember('lineage',lineage),ci=remember('contamination',contamination),ch=remember('health',health),od=remember('decisions',decisions),gt=remember('gates',gates),lc=remember('latest',latest),ds=remember('datasets',datasets),cr=remember('canonical',canonical);
  if(hs)document.getElementById('projectNote').textContent=hs.length+' hypotheses in the production registry. Research outcomes remain archive-only.';
  if(lc?.[0])document.getElementById('latestCandle').textContent=iso(Number(lc[0].open_time_ms));
  if(ch?.[0]){
@@ -247,6 +252,8 @@ async function refresh(){
  }
  document.getElementById('roomHypotheses').innerHTML=Array.isArray(hs)&&hs.length?hs.map(x=>'<div style="padding:7px 0;border-top:1px solid var(--line)"><b class="mono">'+esc(x.hypothesis_key)+'</b> · '+esc(x.direction||'—')+' · '+num(Number(x.horizon_seconds)/3600,2)+'h<br><span class="small">'+esc(x.statement||'')+'</span></div>').join(''):'<span class="status warn">UNAVAILABLE</span>';
  document.getElementById('contaminationList').innerHTML=Array.isArray(ci)&&ci.length?ci.map(x=>'<div style="padding:7px 0;border-top:1px solid var(--line)"><b class="mono">'+esc(iso(x.started_at))+' → '+esc(iso(x.ended_at))+'</b><br><span class="small">'+esc(x.reason||'')+'</span></div>').join(''):'<span class="status ok">NONE RECORDED</span>';
+ document.getElementById('datasetRegistry').innerHTML=Array.isArray(ds)&&ds.length?ds.map(x=>'<div style="padding:7px 0;border-top:1px solid var(--line)"><b class="mono">'+esc(x.dataset_id)+'</b> · '+esc(x.provenance_status||'UNSPECIFIED')+'<br><span class="small">'+esc(x.source_name||x.source_uri||'—')+' · '+esc(x.symbol||'—')+' · '+esc(x.timeframe||'—')+' · immutable='+esc(x.immutable)+'</span></div>').join(''):'<span class="status warn">NO EXTERNAL DATASETS REGISTERED · 0 ROWS</span>';
+ document.getElementById('canonicalHypotheses').innerHTML=Array.isArray(cr)&&cr.length?cr.map(x=>'<div style="padding:7px 0;border-top:1px solid var(--line)"><b class="mono">'+esc(x.hypothesis_id)+' · v'+esc(x.record_version)+'</b> · '+esc(x.status||'UNSPECIFIED')+'<br><span class="small">'+esc(x.title)+' · '+esc(x.origin_type)+' · '+esc(x.provenance_status||'UNSPECIFIED')+'<br>'+esc(x.origin_reference||'NOT_RECOVERABLE_FROM_CURRENT_RECORD')+'</span></div>').join(''):'<span class="status warn">CANONICAL HYPOTHESIS MEMORY UNAVAILABLE</span>';
  renderResults(rs,lm);
  document.getElementById('lineageBody').innerHTML=Array.isArray(lm)&&lm.length?lm.map(l=>{
   const note=(l.replay_notes||'');const cls=l.replay_status==='MATCH'?'positive':l.replay_status==='MISMATCH'?'negative':'caution';
@@ -267,8 +274,8 @@ async function refresh(){
 }
 async function loadAgents(){
  const state=document.getElementById('agentState');state.innerHTML='<span class="status warn">READING</span><b>Loading coordination ledger…</b><span class="fresh">one bounded read</span>';
- const r=await safe('agent_coordination_log?select=task_id,status,owner,lane,updated_at,next_action,commit_sha,db_object&order=updated_at.desc&limit=40');
- if(!r.ok){state.innerHTML='<span class="status warn">UNAVAILABLE</span><b>Anonymous dashboard read is not permitted for the coordination ledger.</b><span class="fresh">Source remains Supabase / AGENTS protocol.</span>';document.getElementById('agentBody').innerHTML='<tr><td colspan="6">Agent ledger unavailable through the public read boundary. Repository notes remain available below.</td></tr>';return}
+ const r=await safe('research_agent_activity_public?select=task_id,status,owner,lane,updated_at,next_action&order=updated_at.desc&limit=40');
+ if(!r.ok){state.innerHTML='<span class="status warn">UNAVAILABLE</span><b>The public coordination summary is unavailable; no status is fabricated.</b><span class="fresh">Source remains Supabase / AGENTS protocol.</span>';document.getElementById('agentBody').innerHTML='<tr><td colspan="6">Agent ledger unavailable through the public read boundary. Repository notes remain available below.</td></tr>';return}
  state.innerHTML='<span class="status ok">OBSERVED</span><b>'+r.data.length+' recent coordination records returned.</b><span class="fresh">'+new Date().toISOString()+'</span>';
  document.getElementById('agentBody').innerHTML=r.data.map(x=>'<tr><td class="mono">'+esc(x.task_id)+'</td><td>'+esc(x.owner)+'</td><td>'+esc(x.lane)+'</td><td>'+esc(x.status)+'</td><td>'+esc(iso(x.updated_at))+'</td><td>'+esc(x.next_action||'—')+'</td></tr>').join('');
 }

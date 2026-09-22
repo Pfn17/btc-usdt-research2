@@ -90,3 +90,10 @@ This checkpoint records presentation/evidence correction only. It does not promo
 The release sequence is complete on GitHub `main`: `f85f536` corrected stale provider claims and `c2bedd9` removed the pinned deployment SHA from the owner surface. Vercel production deployment `dpl_BiGpJC66AtjrgaV5qC7ttBQgHqqL` for `c2bedd9a7c8c32b781ce10b6aee49a9644f6d7f1` is `READY`; canonical HTML contains the corrected provider semantics and no obsolete `BUILDING*`/`FAILED*` labels. Browser runtime reached `LIVE` with no console output, and production H-VOL1 readiness remained `NOT_READY` / `outcome_run=false`.
 
 No H-MR1 or H-VOL1 outcome scan was executed. Supabase function identity, readiness-only API behavior, execution OFF boundary, and the research ledger remain unchanged. Historical coordination rows were preserved rather than deleted or rewritten.
+
+
+## Remote fast-forward reconciliation — 2026-09-22
+
+GitHub `main` had advanced from the local archive-office commit to `b3ae942` with 58 remote commits. The local work was not force-pushed or discarded: it is preserved as `manus/archive-office-c61`. The current main was reset to the remote head, inspected, and patched only for missing canonical archive bindings.
+
+The reconciled dashboard reads `research_dataset_registry`, `research_hypothesis_records`, and `research_agent_activity_public` through bounded read-only REST calls. Supabase migration `20260922203000_public_read_research_archive_views` was applied successfully. Local validation returned 80 passed and 2 skipped. Push and Vercel verification remain after the new commit.

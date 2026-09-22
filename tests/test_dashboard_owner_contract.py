@@ -6,7 +6,7 @@ HTML = (ROOT / "dashboard/index.html").read_text(encoding="utf-8")
 
 def test_dashboard_refreshes_at_bounded_cadence():
     assert "async function refresh()" in HTML
-    assert "setInterval(refresh,60000)" in HTML
+    assert "const schedule={research:60000,market:15000}" in HTML
     assert "cache:'no-store'" in HTML
     assert "research_hypotheses?select=" in HTML
 
